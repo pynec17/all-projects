@@ -16,6 +16,13 @@
  */
 window.PROJECTS = [
   {
+    slug: "react-questions",
+    title: "React Questions",
+    description: "Write real React components and get them auto-tested, live in the browser.",
+    type: "tool",
+    added: "2026-08-25"
+  },
+  {
     slug: "countdown-numbers",
     title: "Countdown Numbers",
     description: "Combine six numbers to hit the target before the 30-second clock runs out.",
