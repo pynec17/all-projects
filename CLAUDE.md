@@ -63,8 +63,20 @@ The index uses a warm paper background with a terracotta accent:
 
 ## Git / deployment notes
 
-- Pushing to `main` triggers the GitHub Pages deploy, so a merged change is what
-  makes the site update.
-- Keep each change to one project plus its `projects.js` entry so pull requests
-  stay easy to review from a phone.
+- **No PR workflow.** This is a single-user repo. Once an idea has been discussed
+  in chat and confirmed, just build it, commit, and push straight to `main` —
+  don't open a pull request or ask for a merge. Only stop to check in if
+  something about the request is genuinely unclear or worth discussing first.
+- Keep each commit to one project plus its `projects.js` entry.
 - Commit messages: short and plain, e.g. `Add unit-converter`.
+- Pushing to `main` triggers the GitHub Pages deploy (classic branch-based Pages,
+  not an Actions workflow). The live site is at `https://pynec17.github.io/all-projects/`
+  — note the GitHub repo itself is named `all-projects` even though this local
+  folder is `all-projects-clean`.
+- **After pushing a new/updated project, confirm the deploy finished before
+  replying**, then send the direct link to that project's page (not just the
+  index) so it can be opened immediately:
+  1. `git rev-parse HEAD` for the pushed commit SHA.
+  2. Poll `gh api repos/pynec17/all-projects/pages/builds/latest` until `status`
+     is `built` and `commit` matches that SHA (a few seconds to ~1 minute).
+  3. Reply with `https://pynec17.github.io/all-projects/<slug>/`.

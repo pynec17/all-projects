@@ -16,6 +16,13 @@
  */
 window.PROJECTS = [
   {
+    slug: "file-upload",
+    title: "File Upload",
+    description: "Browse or drag a file in and hold it on the page, ready for processing.",
+    type: "tool",
+    added: "2026-09-07"
+  },
+  {
     slug: "react-questions",
     title: "React Questions",
     description: "Write real React components and get them auto-tested, live in the browser.",
