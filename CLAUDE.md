@@ -10,14 +10,18 @@ There is **no build step** and **no framework** — plain HTML, CSS, and JavaScr
 /
 ├── index.html      the projects index (do NOT hand-edit the project list here)
 ├── projects.js     the list of projects — THIS is where projects are registered
-├── word-counter/   each project lives in its own folder with an index.html
-│   └── index.html
+├── word-counter/   each project lives in its own folder with index.html/style.css/script.js
+│   ├── index.html
+│   ├── style.css
+│   └── script.js
 └── number-hunt/
-    └── index.html
+    ├── index.html
+    ├── style.css
+    └── script.js
 ```
 
-`index.html` reads the `window.PROJECTS` array from `projects.js` and renders the
-index automatically. Adding a project is two steps: create its folder, then add
+`index.html` (root) reads the `window.PROJECTS` array from `projects.js` and renders
+the index automatically. Adding a project is two steps: create its folder, then add
 one entry to `projects.js`.
 
 ## How to add a new project
@@ -27,10 +31,15 @@ When asked to build something and add it (e.g. "build X and add it to my project
 1. **Create a folder** named with a short, descriptive, lowercase-hyphenated slug
    (e.g. `unit-converter/`, `snake/`, `color-tester/`). Slugs must be unique.
 
-2. **Build the project** as a single self-contained `index.html` inside that folder.
+2. **Build the project** as three files inside that folder: `index.html`,
+   `style.css`, and `script.js`. This is the standard, expected structure for a
+   small web project (a single inlined `index.html` reads as a prototype/snippet,
+   not a finished piece — worth avoiding in anything that doubles as a portfolio).
+   - `index.html` links the other two: `<link rel="stylesheet" href="style.css">`
+     in `<head>`, `<script src="script.js"></script>` before `</body>`.
    - Vanilla HTML/CSS/JS by default. No dependencies or build tooling unless the
      user asks for them.
-   - Must work as a static file over `https://` on GitHub Pages — use only
+   - Must work as static files over `https://` on GitHub Pages — use only
      **relative paths** and no server-side code.
    - Include a back link to the index in the top-left corner:
      `<a href="../">&#9664; INDEX</a>`
