@@ -78,5 +78,14 @@ input[type="file"] { display:none; }
 .next button {
   font-family:var(--mono); font-weight:600; font-size:0.8rem; letter-spacing:0.03em;
   padding:0.55rem 1.1rem; background:var(--border); color:var(--muted);
-  border:none; border-radius:8px; cursor:not-allowed;
+  border:none; border-radius:8px; cursor:not-allowed; white-space:nowrap;
 }
+.next button:not(:disabled) { background:var(--accent); color:#fff; cursor:pointer; }
+.next button:not(:disabled):hover { background:var(--accent-hi); }
+
+.analysis { margin-top:1.25rem; border-top:1px solid var(--border); padding-top:1.1rem; }
+.analysis-label {
+  font-family:var(--mono); font-size:0.76rem; color:var(--muted);
+  text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.5rem;
+}
+.analysis-text { white-space:pre-wrap; line-height:1.55; font-size:0.92rem; }
