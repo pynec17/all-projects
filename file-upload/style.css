@@ -88,4 +88,28 @@ input[type="file"] { display:none; }
   font-family:var(--mono); font-size:0.76rem; color:var(--muted);
   text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.5rem;
 }
-.analysis-text { white-space:pre-wrap; line-height:1.55; font-size:0.92rem; }
+.analysis-text { line-height:1.6; font-size:0.92rem; }
+.analysis-text > *:first-child { margin-top:0; }
+.analysis-text > *:last-child { margin-bottom:0; }
+.analysis-text h1, .analysis-text h2, .analysis-text h3, .analysis-text h4 {
+  font-family:var(--serif); font-style:italic; font-weight:600; color:var(--text);
+  line-height:1.3; margin:1.2em 0 0.4em;
+}
+.analysis-text h1 { font-size:1.3rem; }
+.analysis-text h2 { font-size:1.15rem; }
+.analysis-text h3 { font-size:1.02rem; }
+.analysis-text h4 { font-size:0.95rem; }
+.analysis-text p { margin:0.6em 0; }
+.analysis-text ul, .analysis-text ol { margin:0.5em 0; padding-left:1.4em; }
+.analysis-text li { margin:0.25em 0; }
+.analysis-text li::marker { color:var(--accent); }
+.analysis-text strong { font-weight:700; }
+.analysis-text em { color:var(--muted); }
+.analysis-text code {
+  font-family:var(--mono); font-size:0.85em; background:#fbf3ec;
+  border:1px solid var(--border); border-radius:4px; padding:0.1em 0.35em;
+}
+.analysis-text hr { border:none; border-top:1px solid var(--border); margin:1.2em 0; }
+.analysis-text blockquote {
+  margin:0.6em 0; padding-left:0.8em; border-left:2px solid var(--accent); color:var(--muted);
+}

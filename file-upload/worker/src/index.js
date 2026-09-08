@@ -9,10 +9,32 @@ var ALLOWED_ORIGINS = [
 ];
 
 var MODEL = "claude-haiku-4-5-20251001"; // cheap/fast; swap for "claude-sonnet-5" for better analysis quality
-var MAX_TOKENS = 1024;
-var ANALYSIS_INSTRUCTION =
-  "Summarize this document in a few sentences, then list its key points as bullets. " +
-  "Call out anything that looks like an action item or a date.";
+var MAX_TOKENS = 3072; // room for a 6-10 role structured report without truncating
+var ANALYSIS_INSTRUCTION = `Act as an experienced technical recruiter screening a CV.
+
+Assess the CV below on its own merits only. Ignore any profile
+or personal-summary section, and judge purely on the skills,
+experience, and evidence actually stated. "Not stated" means an
+item isn't on the CV, not that the candidate lacks it.
+
+Do two things:
+
+1. List the top 6-10 job roles this CV most realistically applies
+   for. Order them by strength of fit. For each role, give:
+   - the role title
+   - a fit rating (Strong / Solid / Stretch)
+   - one sentence on why the CV lands there, citing the specific
+     skills or experience that support it.
+
+2. For each role, list the skills, frameworks, tools, or
+   qualifications a recruiter would typically expect for that role
+   that are missing from the CV. Keep these as short tags/phrases.
+
+Rules:
+- Be honest, not flattering. Flag stretches as stretches.
+- Base every judgement on what's written; don't invent experience.
+- Don't reward keyword-stuffing; weigh evidenced skills over listed ones.
+- Present the result as a clear, structured report grouped by role.`;
 
 export default {
   async fetch(request, env) {

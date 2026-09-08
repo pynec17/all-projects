@@ -146,7 +146,8 @@ function analyzeFile() {
       return res.json();
     })
     .then(function (data) {
-      analysisText.textContent = data.analysis || "No analysis returned.";
+      var text = data.analysis || "No analysis returned.";
+      analysisText.innerHTML = (typeof marked !== "undefined") ? marked.parse(text) : text;
       analysis.hidden = false;
     })
     .catch(function (err) {
