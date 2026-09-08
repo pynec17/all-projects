@@ -1,8 +1,7 @@
 // The loaded file lives here for whatever comes next (e.g. sending to an LLM).
 var state = { file: null, previewUrl: null };
 
-// Replace with your deployed Worker's URL (see file-upload/worker/).
-var WORKER_URL = "https://file-analyzer.YOUR-SUBDOMAIN.workers.dev";
+var WORKER_URL = "https://wild-shapworkerpreviewe-0e99.quartzlegend.workers.dev/";
 
 // application/msword (old .doc) isn't supported here — mammoth.js only reads .docx.
 var ANALYZABLE_TYPES = {
