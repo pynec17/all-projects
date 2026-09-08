@@ -17,8 +17,8 @@
 window.PROJECTS = [
   {
     slug: "file-upload",
-    title: "File Upload",
-    description: "Browse or drag a file in and hold it on the page, ready for processing.",
+    title: "CV Screener",
+    description: "Upload a CV and Claude screens it like a recruiter — role fit and what's missing for each.",
     type: "tool",
     added: "2026-09-07"
   },

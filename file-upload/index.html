@@ -3,22 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>File Upload</title>
+  <title>CV Screener</title>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@1,500;1,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <a class="back" href="../">&#9664; INDEX</a>
-  <h1>File Upload</h1>
-  <p class="sub">Browse or drop a file to load it into the page. Nothing leaves your browser yet &mdash; processing comes next.</p>
+  <h1>CV Screener</h1>
+  <p class="sub">Upload a CV and Claude screens it like a recruiter &mdash; the roles it fits, and what's missing for each.</p>
 
   <div class="card">
     <div class="dropzone" id="dropzone">
       <div class="icon">&#128193;</div>
-      <div class="prompt">Drop a file here or <span class="browse">browse</span></div>
-      <div class="hint">PDF, image, text &mdash; any file type</div>
+      <div class="prompt">Drop your CV here or <span class="browse">browse</span></div>
+      <div class="hint">PDF or Word (.docx)</div>
     </div>
-    <input type="file" id="fileInput" />
+    <input type="file" id="fileInput" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
 
     <div class="file-info" id="fileInfo">
       <div class="glyph" id="fileGlyph">FILE</div>
@@ -32,12 +32,12 @@
     <div class="preview" id="preview"></div>
 
     <div class="next" id="next">
-      <div class="label" id="nextLabel">File held in memory, ready for processing.</div>
-      <button id="processBtn" disabled>PROCESS &rarr;</button>
+      <div class="label" id="nextLabel">File held in memory, ready to screen.</div>
+      <button id="processBtn" disabled>SCREEN CV &rarr;</button>
     </div>
 
     <div class="analysis" id="analysis" hidden>
-      <div class="analysis-label">Analysis</div>
+      <div class="analysis-label">Screening Report</div>
       <div class="analysis-text" id="analysisText"></div>
     </div>
   </div>

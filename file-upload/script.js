@@ -68,10 +68,10 @@ function loadFile(file) {
 
   var kind = ANALYZABLE_TYPES[file.type];
   processBtn.disabled = !kind;
-  processBtn.textContent = "PROCESS →";
+  processBtn.textContent = "SCREEN CV →";
   nextLabel.textContent = kind
-    ? "Ready to analyze with Claude."
-    : "File held in memory. Only PDF and Word (.docx) files can be analyzed.";
+    ? "Ready to screen with Claude."
+    : "File held in memory. Only PDF and Word (.docx) CVs can be screened.";
   analysis.hidden = true;
   analysisText.textContent = "";
 
@@ -118,13 +118,13 @@ function analyzeFile() {
   if (!kind) return;
 
   if (file.size > MAX_ANALYZE_BYTES) {
-    analysisText.textContent = "That file's a bit large to analyze here (over " + formatSize(MAX_ANALYZE_BYTES) + ").";
+    analysisText.textContent = "That file's a bit large to screen here (over " + formatSize(MAX_ANALYZE_BYTES) + ").";
     analysis.hidden = false;
     return;
   }
 
   processBtn.disabled = true;
-  processBtn.textContent = "ANALYZING…";
+  processBtn.textContent = "SCREENING…";
   analysis.hidden = true;
   analysisText.textContent = "";
 
@@ -156,7 +156,7 @@ function analyzeFile() {
     })
     .then(function () {
       processBtn.disabled = false;
-      processBtn.textContent = "PROCESS →";
+      processBtn.textContent = "SCREEN CV →";
     });
 }
 
