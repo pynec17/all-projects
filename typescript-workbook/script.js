@@ -51,6 +51,7 @@
 
   function parseHash() {
     var parts = location.hash.replace(/^#\/?/, "").split("/");
+    if (parts[0] === "glossary") return { glossary: true, term: parts[1] || "" };
     var level = ui.levels[ui.levelIndex(parts[0])];
     if (!level) level = ui.levels[ui.levelIndex(ui.get("last"))] || ui.firstUnfinished();
     if (parts[1] === "theory") parts[1] = "quiz";   // old links
@@ -92,7 +93,7 @@
 
   function render() {
     route = parseHash();
-    ui.set("last", route.level.id);
+    if (route.level) ui.set("last", route.level.id);
     document.body.classList.remove("toc-open");
     contentsBtn.setAttribute("aria-expanded", "false");
     refreshChrome();
@@ -139,6 +140,16 @@
         tocEl.appendChild(sub);
       });
     });
+
+    var g = el("a", "toc-level toc-glossary" + (route.glossary ? " active" : ""));
+    g.href = "#glossary";
+    g.innerHTML =
+      '<span class="toc-mark" aria-hidden="true">◆</span>' +
+      '<span class="toc-num">A–Z</span>' +
+      '<span class="toc-title">Glossary</span>' +
+      '<span class="toc-count">' + ui.glossaryCount + "</span>";
+    if (route.glossary) g.setAttribute("aria-current", "true");
+    tocEl.appendChild(g);
   }
 
   function renderRail() {
@@ -150,9 +161,12 @@
     for (var i = 0; i < goal; i++) squares += '<span class="' + (i < today ? "on" : "") + '"></span>';
 
     var upNext = "";
-    var current = ui.levelCounts(route.level);
+    var here = route.level || ui.firstUnfinished();
+    var current = ui.levelCounts(here);
     if (current.done < current.total) {
-      upNext = "<strong>" + (current.total - current.done) + "</strong> left in " + esc(route.level.title) + ".";
+      upNext = route.level
+        ? "<strong>" + (current.total - current.done) + "</strong> left in " + esc(here.title) + "."
+        : 'Next: <a href="' + hashFor(here, sectionsFor(here)[0].id, 0) + '">' + esc(levelLabel(here) + " · " + here.title) + "</a>";
     } else {
       var next = ui.firstUnfinished();
       upNext = next && ui.levelCounts(next).done < ui.levelCounts(next).total
@@ -173,7 +187,7 @@
 
   function renderChips() {
     var chips = document.getElementById("chips");
-    if (!chips) return;
+    if (!chips || !route.level) return;
     chips.innerHTML = "";
     sectionsFor(route.level).forEach(function (s) {
       var a = el("a", "chip" + (isActiveSection(s) ? " active" : ""));
@@ -196,6 +210,14 @@
     var level = route.level;
     contentEl.innerHTML = "";
     window.scrollTo(0, 0);
+
+    if (route.glossary) {
+      contentEl.appendChild(el("div", "level-head",
+        '<div class="crumb">Reference</div><h1>Glossary</h1>' +
+        '<p class="blurb">Every key term in the workbook, in one place. Underlined terms elsewhere show these definitions when you hover or tap them.</p>'));
+      contentEl.appendChild(ui.renderGlossary(route.term));
+      return;
+    }
 
     var head = el("div", "level-head");
     head.innerHTML =
@@ -248,7 +270,7 @@
     }
     hits.forEach(function (hit) {
       var b = el("button", "result",
-        '<span class="result-kind">' + esc(hit.kind + " · " + levelLabel(hit.level) + " " + hit.level.title) + "</span>" +
+        '<span class="result-kind">' + esc(hit.level ? hit.kind + " · " + levelLabel(hit.level) + " " + hit.level.title : hit.kind) + "</span>" +
         '<span class="result-text">' + esc(hit.text) + "</span>");
       b.type = "button";
       b.addEventListener("click", function () { choose(hit); });
@@ -261,7 +283,7 @@
     searchEl.value = "";
     resultsEl.hidden = true;
     searchEl.blur();
-    var target = hashFor(hit.level, hit.section, hit.index);
+    var target = hit.href || hashFor(hit.level, hit.section, hit.index);
     if (location.hash === target) render(); else location.hash = target;
   }
 

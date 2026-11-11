@@ -2931,6 +2931,11 @@
     chapter.examples = simple.concat(chapter.examples);
   });
 
+  // Teaching order. Unions and narrowing come early (as in the TypeScript Handbook),
+  // because `T | undefined` and null checks show up in almost every later chapter.
+  var ORDER = ["basics", "functions", "objects", "unions", "classes", "generics", "utility", "real-world"];
+  CHAPTERS.sort(function (a, b) { return ORDER.indexOf(a.id) - ORDER.indexOf(b.id); });
+
   // Reference guides live in lessons.js (loaded before this file).
   var GUIDES = window.TSW_LESSONS || {};
 

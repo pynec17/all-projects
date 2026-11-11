@@ -291,6 +291,7 @@
         feedback.hidden = false;
         feedback.className = "deck-feedback good";
         feedback.innerHTML = "<strong>Correct.</strong> " + md(q.explanation);
+        glossify(feedback);   // terms are linked only after answering, so they can't give answers away
       }
 
       function go(i) {
@@ -377,6 +378,7 @@
         '<div class="solution-block" hidden><pre class="solution-code"></pre>' +
         '<button type="button" class="btn load-solution-btn">Load into editor</button></div>';
 
+      glossify(wrap.querySelector(".prompt"));
       var editor = wrap.querySelector(".editor");
       var runBtn = wrap.querySelector(".run-btn");
       var status = wrap.querySelector(".status");
@@ -482,7 +484,7 @@
         : el("pre", "", "<code>" + esc(example.code) + "</code>"));
       wrap.appendChild(el("p", "takeaway",
         "<strong>" + (example.simple ? "Key point:" : "Why it matters:") + "</strong> " + md(example.takeaway)));
-      return wrap;
+      return glossify(wrap);
     }
 
     function renderExamples(chapter) {
@@ -497,6 +499,271 @@
         wrap.appendChild(el("p", "examples-intro", esc(g.intro)));
         g.items.forEach(function (ex) { wrap.appendChild(renderExample(ex)); });
       });
+      return wrap;
+    }
+
+    // ------------------------------------------------------------------
+    // Glossary: term links with hover/tap definitions (terms in glossary.js)
+    // ------------------------------------------------------------------
+
+    var GLOSSARY = window.TSW_GLOSSARY || [];
+    var glossById = {};
+    GLOSSARY.forEach(function (g) { glossById[g.id] = g; });
+
+    function levelName(levelId) {
+      var i = levelIndex(levelId);
+      if (i === -1) return "";
+      var level = levels[i], n = 0;
+      for (var j = 0; j <= i; j++) if (levels[j].kind === level.kind) n++;
+      return (level.kind === "lab" ? "Lab " + n : "Chapter " + n) + " · " + level.title;
+    }
+
+    // Tags inside which terms are never linked.
+    var NO_TERMS = { PRE: 1, TEXTAREA: 1, BUTTON: 1, A: 1, H1: 1, H2: 1, H3: 1, H4: 1, INPUT: 1, SELECT: 1, TABLE: 1 };
+
+    // Link the first mention of each glossary term inside root. `seen` is shared
+    // across one container (a guide section, a quiz card…) so a term is linked once.
+    function glossify(root, seen) {
+      if (!GLOSSARY.length || !root) return root;
+      seen = seen || {};
+      walk(root);
+      return root;
+
+      function walk(node) {
+        var child = node.firstChild;
+        while (child) {
+          var next = child.nextSibling;
+          if (child.nodeType === 1) {
+            if (NO_TERMS[child.tagName] || child.classList.contains("term") || child.classList.contains("choice") || child.classList.contains("pchoice")) {
+              // skip
+            } else if (child.tagName === "CODE") {
+              linkCode(child);
+            } else {
+              walk(child);
+            }
+          } else if (child.nodeType === 3 && child.nodeValue.trim()) {
+            linkText(child);
+          }
+          child = next;
+        }
+      }
+
+      function makeTerm(id) {
+        var span = document.createElement("span");
+        span.className = "term";
+        span.setAttribute("data-term", id);
+        span.setAttribute("tabindex", "0");
+        span.setAttribute("role", "button");
+        span.setAttribute("aria-label", "Definition: " + glossById[id].term);
+        return span;
+      }
+
+      function linkCode(codeEl) {
+        var text = codeEl.textContent;
+        for (var i = 0; i < GLOSSARY.length; i++) {
+          var g = GLOSSARY[i];
+          if (!g.code || seen[g.id]) continue;
+          if (g.code.some(function (re) { return re.test(text); })) {
+            seen[g.id] = true;
+            var span = makeTerm(g.id);
+            codeEl.parentNode.replaceChild(span, codeEl);
+            span.appendChild(codeEl);
+            return;
+          }
+        }
+      }
+
+      function linkText(textNode) {
+        var text = textNode.nodeValue;
+        var hits = [];
+        GLOSSARY.forEach(function (g) {
+          if (!g.words || seen[g.id]) return;
+          g.words.forEach(function (re) {
+            var global = new RegExp(re.source, re.flags.indexOf("g") === -1 ? re.flags + "g" : re.flags);
+            var m;
+            while ((m = global.exec(text))) {
+              hits.push({ start: m.index, end: m.index + m[0].length, id: g.id });
+              if (!m[0].length) global.lastIndex++;
+            }
+          });
+        });
+        if (!hits.length) return;
+        // Earliest first; for ties, the longest match wins ("discriminated union" over "union").
+        hits.sort(function (a, b) { return a.start - b.start || (b.end - b.start) - (a.end - a.start); });
+        var chosen = [], lastEnd = 0;
+        hits.forEach(function (h) {
+          if (h.start < lastEnd || seen[h.id]) return;
+          seen[h.id] = true;
+          chosen.push(h);
+          lastEnd = h.end;
+        });
+        if (!chosen.length) return;
+        var frag = document.createDocumentFragment(), pos = 0;
+        chosen.forEach(function (h) {
+          if (h.start > pos) frag.appendChild(document.createTextNode(text.slice(pos, h.start)));
+          var span = makeTerm(h.id);
+          span.textContent = text.slice(h.start, h.end);
+          frag.appendChild(span);
+          pos = h.end;
+        });
+        if (pos < text.length) frag.appendChild(document.createTextNode(text.slice(pos)));
+        textNode.parentNode.replaceChild(frag, textNode);
+      }
+    }
+
+    // One shared popover for every term on the page.
+    var pop = null, popTerm = null, popPinned = false, hoverTimer = null, hideTimer = null;
+
+    function ensurePopover() {
+      if (pop) return pop;
+      pop = el("div", "term-pop");
+      pop.setAttribute("role", "dialog");
+      pop.hidden = true;
+      document.body.appendChild(pop);
+      pop.addEventListener("pointerenter", function () { clearTimeout(hideTimer); });
+      pop.addEventListener("pointerleave", function (e) { if (e.pointerType === "mouse" && !popPinned) scheduleHide(); });
+      pop.addEventListener("click", function (e) { if (e.target.closest("a")) hidePopover(); });
+
+      document.addEventListener("pointerover", function (e) {
+        if (e.pointerType !== "mouse") return;
+        var t = e.target.closest && e.target.closest(".term");
+        if (!t || popPinned) return;
+        clearTimeout(hideTimer);
+        clearTimeout(hoverTimer);
+        hoverTimer = setTimeout(function () { showPopover(t, false); }, 120);
+      });
+      document.addEventListener("pointerout", function (e) {
+        if (e.pointerType !== "mouse") return;
+        var t = e.target.closest && e.target.closest(".term");
+        if (!t) return;
+        clearTimeout(hoverTimer);
+        if (!popPinned) scheduleHide();
+      });
+      document.addEventListener("click", function (e) {
+        var t = e.target.closest && e.target.closest(".term");
+        if (t) {
+          e.preventDefault();
+          if (popTerm === t && popPinned) hidePopover(); else showPopover(t, true);
+          return;
+        }
+        if (!pop.hidden && !pop.contains(e.target)) hidePopover();
+      });
+      document.addEventListener("keydown", function (e) {
+        var t = e.target.closest && e.target.closest(".term");
+        if (t && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (popTerm === t && !pop.hidden) hidePopover(); else showPopover(t, true);
+        } else if (e.key === "Escape" && !pop.hidden) {
+          var back = popTerm;
+          hidePopover();
+          if (back) back.focus();
+          e.stopPropagation();
+        }
+      }, true);
+      window.addEventListener("scroll", function () { if (!pop.hidden) placePopover(); }, true);
+      window.addEventListener("resize", function () { if (!pop.hidden) placePopover(); });
+      window.addEventListener("hashchange", hidePopover);
+      return pop;
+    }
+
+    function scheduleHide() {
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(hidePopover, 220);
+    }
+
+    function hidePopover() {
+      if (!pop) return;
+      pop.hidden = true;
+      if (popTerm) popTerm.setAttribute("aria-expanded", "false");
+      popTerm = null;
+      popPinned = false;
+    }
+
+    function showPopover(term, pinned) {
+      ensurePopover();
+      var g = glossById[term.getAttribute("data-term")];
+      if (!g) return;
+      if (popTerm && popTerm !== term) popTerm.setAttribute("aria-expanded", "false");
+      popTerm = term;
+      popPinned = pinned;
+      term.setAttribute("aria-expanded", "true");
+      var links = '<a href="#glossary/' + g.id + '">Glossary</a>';
+      if (g.more) links = '<a href="#' + g.more + '/guide">More: ' + esc(levelName(g.more)) + " →</a>" + links;
+      if (g.level) links = '<a href="#' + g.level + '/guide">' + esc(levelName(g.level)) + " →</a>" + links;
+      pop.innerHTML =
+        '<div class="term-pop-name">' + esc(g.term) + (g.level ? "" : ' <span class="term-pop-tag">JavaScript</span>') + "</div>" +
+        "<p>" + md(g.def) + "</p>" +
+        '<div class="term-pop-links">' + links + "</div>";
+      pop.hidden = false;
+      placePopover();
+    }
+
+    function placePopover() {
+      if (!popTerm || !document.body.contains(popTerm)) { hidePopover(); return; }
+      var r = popTerm.getBoundingClientRect();
+      var w = Math.min(320, window.innerWidth - 16);
+      pop.style.width = w + "px";
+      var left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8));
+      var h = pop.offsetHeight;
+      var top = r.bottom + 6;
+      if (top + h > window.innerHeight - 8 && r.top - h - 6 > 8) top = r.top - h - 6;
+      pop.style.left = left + "px";
+      pop.style.top = top + "px";
+    }
+
+    if (GLOSSARY.length) {
+      if (document.body) ensurePopover();
+      else document.addEventListener("DOMContentLoaded", ensurePopover);
+    }
+
+    function renderGlossary(focusId) {
+      var wrap = el("div", "glossary");
+      var filter = el("input", "glossary-filter");
+      filter.type = "search";
+      filter.placeholder = "Filter " + GLOSSARY.length + " terms";
+      filter.setAttribute("aria-label", "Filter the glossary");
+      wrap.appendChild(filter);
+
+      var sorted = GLOSSARY.slice().sort(function (a, b) {
+        return a.term.replace(/^[^A-Za-z]+/, "").toLowerCase().localeCompare(b.term.replace(/^[^A-Za-z]+/, "").toLowerCase());
+      });
+      var list = el("div", "glossary-list");
+      var empty = el("p", "glossary-empty", "No terms match.");
+      empty.hidden = true;
+      sorted.forEach(function (g) {
+        var item = el("div", "gloss-entry");
+        item.id = "gloss-" + g.id;
+        var meta = g.level
+          ? 'Covered in <a href="#' + g.level + '/guide">' + esc(levelName(g.level)) + "</a>" +
+            (g.more ? ' and <a href="#' + g.more + '/guide">' + esc(levelName(g.more)) + "</a>" : "")
+          : "Plain JavaScript syntax";
+        item.innerHTML = "<h3>" + esc(g.term) + "</h3><p>" + md(g.def) + '</p><div class="gloss-meta">' + meta + "</div>";
+        item.setAttribute("data-search", (g.term + " " + plain(g.def)).toLowerCase());
+        list.appendChild(item);
+      });
+      wrap.appendChild(list);
+      wrap.appendChild(empty);
+
+      filter.addEventListener("input", function () {
+        var q = filter.value.trim().toLowerCase();
+        var shown = 0;
+        Array.prototype.forEach.call(list.children, function (item) {
+          var match = !q || item.getAttribute("data-search").indexOf(q) !== -1;
+          item.hidden = !match;
+          if (match) shown++;
+        });
+        empty.hidden = shown > 0;
+      });
+
+      if (focusId && glossById[focusId]) {
+        setTimeout(function () {
+          var target = document.getElementById("gloss-" + focusId);
+          if (!target) return;
+          target.classList.add("focus");
+          window.scrollTo(0, target.getBoundingClientRect().top + window.scrollY - 90);
+        }, 50);
+      }
       return wrap;
     }
 
@@ -691,6 +958,7 @@
         var sec = el("section", "guide-section");
         sec.appendChild(el("h3", "", rich(s.title)));
         s.blocks.forEach(function (b) { sec.appendChild(renderGuideBlock(b)); });
+        glossify(sec);
         sectionEls.push(sec);
         wrap.appendChild(sec);
       });
@@ -710,6 +978,7 @@
           list.appendChild(li);
         });
         g.appendChild(list);
+        glossify(g);
         sectionEls.push(g);
         wrap.appendChild(g);
       }
@@ -782,6 +1051,7 @@
       var tabName = wrap.querySelector(".tab-name");
       var tabBadge = wrap.querySelector(".tab-badge");
       var terminal = wrap.querySelector(".lab-terminal");
+      glossify(wrap.querySelector(".lab-prompt"));
       var checksEl = wrap.querySelector(".lab-checks");
       var buildBtn = wrap.querySelector(".build-btn");
       var solutionEl = wrap.querySelector(".lab-solution");
@@ -1025,6 +1295,7 @@
       function showExplanation(correct) {
         explain.hidden = false;
         explain.innerHTML = (correct ? "<strong>Correct.</strong> " : "<strong>Not quite.</strong> Compare your picks with the real output. ") + md(task.explanation);
+        glossify(explain);
       }
 
       wrap.querySelector(".check-btn").addEventListener("click", function () {
@@ -1088,6 +1359,7 @@
           });
         }
         // Guide hits: index 0 is the top of the guide, index i + 1 is section i.
+        // (Glossary hits are added once, after this loop.)
         if (level.guide) {
           level.guide.glance.forEach(function (row) {
             items.push({ level: level, section: "guide", index: 0, kind: "Guide", text: row[0], extra: plain(row[1]) });
@@ -1100,6 +1372,9 @@
             items.push({ level: level, section: "guide", index: i + 1, kind: "Guide", text: plain(s.title), extra: plain(body) });
           });
         }
+      });
+      GLOSSARY.forEach(function (g) {
+        items.push({ href: "#glossary/" + g.id, kind: "Glossary", text: g.term, extra: plain(g.def) });
       });
       return items;
     }
@@ -1141,6 +1416,8 @@
       renderExample: renderExample,
       renderExamples: renderExamples,
       renderGuide: renderGuide,
+      renderGlossary: renderGlossary,
+      glossaryCount: GLOSSARY.length,
       renderLabTask: renderLabTask,
       search: search,
       get: get,
