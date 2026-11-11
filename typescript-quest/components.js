@@ -1055,7 +1055,7 @@
       levels.forEach(function (level) {
         if (level.kind === "chapter") {
           level.chapter.theory.forEach(function (q, i) {
-            items.push({ level: level, section: "theory", index: i, kind: "Question", text: plain(q.prompt) });
+            items.push({ level: level, section: "quiz", index: i, kind: "Quiz", text: plain(q.prompt) });
           });
           level.chapter.challenges.forEach(function (c, i) {
             items.push({ level: level, section: "challenges", index: i, kind: "Challenge", text: c.title, extra: plain(c.prompt) });

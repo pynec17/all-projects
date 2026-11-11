@@ -40,7 +40,7 @@
     var ch = ui.sectionCounts(level, "challenges");
     return [
       GUIDE,
-      { id: "theory", index: 0, label: "Theory", count: th },
+      { id: "quiz", index: 0, label: "Quiz", count: th },
       { id: "challenges", index: 0, label: "Challenges", count: ch },
       { id: "examples", index: 0, label: "Examples" }
     ];
@@ -58,7 +58,7 @@
       return hashFor(level, "tasks", Math.max(0, t));
     }
     var q = level.chapter.theory.findIndex(function (item) { return !ui.isDone("theory", item.id); });
-    if (q !== -1) return hashFor(level, "theory", q);
+    if (q !== -1) return hashFor(level, "quiz", q);
     return hashFor(level, "challenges", 0);
   }
 
@@ -66,7 +66,8 @@
     var parts = location.hash.replace(/^#\/?/, "").split("/");
     var level = ui.levels[ui.levelIndex(parts[0])];
     if (!level) return { home: true };
-    var valid = level.kind === "lab" ? ["guide", "tasks"] : ["guide", "theory", "challenges", "examples"];
+    if (parts[1] === "theory") parts[1] = "quiz";   // old links
+    var valid = level.kind === "lab" ? ["guide", "tasks"] : ["guide", "quiz", "challenges", "examples"];
     var section = valid.indexOf(parts[1]) === -1 ? valid[0] : parts[1];
     var index = Math.max(0, parseInt(parts[2], 10) || 0);
     if (section === "tasks") index = Math.min(index, level.lab.tasks.length - 1);
@@ -219,9 +220,9 @@
     var section = document.getElementById("section");
     if (route.section === "guide") {
       section.appendChild(ui.renderGuide(level));
-    } else if (route.section === "theory") {
+    } else if (route.section === "quiz") {
       section.appendChild(ui.renderDeck(level.chapter, route.index, function (i) {
-        history.replaceState(null, "", hashFor(level, "theory", i));
+        history.replaceState(null, "", hashFor(level, "quiz", i));
         route.index = i;
       }));
     } else if (route.section === "challenges") {

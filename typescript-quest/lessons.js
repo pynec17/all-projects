@@ -37,7 +37,7 @@
   // ------------------------------------------------------------------
   G.basics = {
     minutes: 5,
-    summary: "TypeScript is JavaScript plus a type checker. Types are checked before the code runs, then erased.",
+    summary: "TypeScript is JavaScript plus a type checker. It catches mistakes like typos and wrong argument types as you write, before the code runs. Then the types are erased.",
     glance: [
       ["let x: string", "annotation: x holds a string"],
       ["let x = 5", "inference: x is number, no annotation needed"],
@@ -230,6 +230,7 @@
       {
         title: "Function types and callbacks",
         blocks: [
+          "Arrow functions infer their whole type from their parameters and body: `const add = (a: number, b: number) => a + b` has the type `(a: number, b: number) => number`.",
           "When a function is assigned to a known function type, its parameters are typed for you (**contextual typing**). That's why callbacks to `map` or `addEventListener` rarely need annotations.",
           {
             code: c(`
@@ -298,6 +299,21 @@
               "Optional properties read as `T | undefined`; handle them with `?.`, `??` or an `if`.",
               "`readonly` is compile-time only and shallow: a `readonly string[]` blocks `push`; a `readonly` property holding a `string[]` doesn't."
             ]
+          },
+          "To \"change\" a read-only object, build a new one with spread syntax. The original stays untouched:",
+          {
+            code: c(`
+              interface Config {
+                readonly apiUrl: string;
+                readonly timeoutMs: number;
+              }
+
+              const base: Config = { apiUrl: "/api", timeoutMs: 1000 };
+              const slow: Config = { ...base, timeoutMs: 5000 };   // copy, then override
+
+              console.log(base.timeoutMs, slow.timeoutMs);
+            `),
+            run: true
           }
         ]
       },
@@ -408,9 +424,26 @@
             `),
             run: true
           },
+          "`protected` is like `private`, but subclasses can use it too. Outside code still can't:",
+          {
+            code: c(`
+              class Animal {
+                constructor(protected petName: string) {}
+              }
+
+              class Dog extends Animal {
+                bark() { return this.petName + " says woof"; }   // fine: subclass
+              }
+
+              const rex = new Dog("Rex");
+              console.log(rex.bark());
+              // rex.petName;  // error: protected
+            `),
+            run: true
+          },
           {
             list: [
-              "A class is a value (call it with `new`) and a type (`const a: BankAccount`).",
+              "A class is a value (call it with `new`) and a type (`const a: BankAccount`). Unlike an interface, which is erased completely, a class compiles to real JavaScript that exists at runtime.",
               "`public owner: string` in the constructor declares and assigns `this.owner`."
             ]
           },
@@ -714,6 +747,7 @@
     minutes: 5,
     summary: "Build new types from existing ones instead of copying them, so they stay in sync.",
     glance: [
+      ["keyof T", 'union of T\'s keys, e.g. "id" | "email"'],
       ["typeof value", "the type of a value (in a type position)"],
       ["ReturnType<typeof fn>", "a function's return type"],
       ["Partial<T> / Required<T>", "all properties optional / required"],
@@ -849,6 +883,7 @@
       ["(v: unknown): v is User", "validate it with a type guard"],
       ["value as User", "assertion: no check at all"],
       ["{ … } satisfies Config", "checked, keeps the precise type"],
+      ["import type { User } from …", "type-only import, always erased from the output"],
       ["npm i -D @types/x", "community types for a JS package"],
       ['declare module "x" { … }', "write types for an untyped package"]
     ],
@@ -951,6 +986,18 @@
               declare module "legacy-lib" {
                 export function slugify(input: string): string;
               }
+            `)
+          }
+        ]
+      },
+      {
+        title: "Type-only imports",
+        blocks: [
+          "When you import something only to use as a type, say so with `import type`. It's guaranteed to be erased, so it never pulls the other module in at runtime. Build tools that compile one file at a time (esbuild, Vite) rely on this.",
+          {
+            code: c(`
+              import type { User } from "./user";     // erased completely
+              import { formatUser } from "./format";  // a real import, kept
             `)
           }
         ]
@@ -1069,6 +1116,16 @@
               const port = (_a = config.port) !== null && _a !== void 0 ? _a : 3000;
             `)
           },
+          "Only syntax **newer than the target** is rewritten. Useful dates:",
+          {
+            list: [
+              "ES2015: arrow functions, `let`/`const`, classes, template literals",
+              "ES2017: `async` / `await`",
+              "ES2020: `??` and `?.`",
+              "ES2022: class fields with `#private`, top-level `await`"
+            ]
+          },
+          "So with `\"target\": \"ES2017\"`, `??` and `?.` get rewritten, while arrow functions and template literals are left alone.",
           "`target` rewrites **syntax** only. It doesn't add missing built-ins like `Array.prototype.at`; that's `lib` and polyfills."
         ]
       },
