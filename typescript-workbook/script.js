@@ -39,7 +39,7 @@
     }
     return [
       GUIDE,
-      { id: "theory", index: 0, label: "Theory", short: "Theory", count: ui.sectionCounts(level, "theory") },
+      { id: "quiz", index: 0, label: "Quiz", short: "Quiz", count: ui.sectionCounts(level, "theory") },
       { id: "challenges", index: 0, label: "Code challenges", short: "Challenges", count: ui.sectionCounts(level, "challenges") },
       { id: "examples", index: 0, label: "Real-world examples", short: "Examples" }
     ];
@@ -53,7 +53,8 @@
     var parts = location.hash.replace(/^#\/?/, "").split("/");
     var level = ui.levels[ui.levelIndex(parts[0])];
     if (!level) level = ui.levels[ui.levelIndex(ui.get("last"))] || ui.firstUnfinished();
-    var valid = level.kind === "lab" ? ["guide", "tasks"] : ["guide", "theory", "challenges", "examples"];
+    if (parts[1] === "theory") parts[1] = "quiz";   // old links
+    var valid = level.kind === "lab" ? ["guide", "tasks"] : ["guide", "quiz", "challenges", "examples"];
     var section = valid.indexOf(parts[1]) === -1 ? valid[0] : parts[1];
     var index = Math.max(0, parseInt(parts[2], 10) || 0);
     if (section === "tasks") index = Math.min(index, level.lab.tasks.length - 1);
@@ -208,9 +209,9 @@
     var body = el("div", "section-body");
     contentEl.appendChild(body);
 
-    if (route.section === "theory") {
+    if (route.section === "quiz") {
       body.appendChild(ui.renderDeck(level.chapter, route.index, function (i) {
-        history.replaceState(null, "", hashFor(level, "theory", i));
+        history.replaceState(null, "", hashFor(level, "quiz", i));
         route.index = i;
       }));
     } else if (route.section === "challenges") {
