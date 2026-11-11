@@ -77,6 +77,39 @@
           ],
           correct: 0,
           explanation: "A `number[]` can be any length. The tuple `[number, number]` is locked to exactly two numbers, in that order — useful for fixed-shape pairs like coordinates."
+        },
+        {
+          id: "basics-6",
+          type: "mc",
+          prompt: "What does TypeScript say about this code?\n```\nlet x = \"hello\";\nx = 42;\n```",
+          options: [
+            "Error: Type 'number' is not assignable to type 'string' — `x` was inferred as `string` from its first value.",
+            "No error — `let` variables can be reassigned to anything.",
+            "Error — `let` variables can't be reassigned.",
+            "No error — `x` quietly becomes `string | number`."
+          ],
+          correct: 0,
+          explanation: "Type inference locks in a variable's type from its initializer. `let` lets you reassign the value, but only to another value of the same type."
+        },
+        {
+          id: "basics-7",
+          type: "text",
+          prompt: "`const status = \"active\";` — what type does TypeScript infer for `status`? Type it exactly as an editor would show it when you hover.",
+          accept: ['"active"', "'active'", "active"],
+          explanation: "A `const` can never change, so TypeScript infers the narrowest type possible: the literal type `\"active\"`. Write `let status = \"active\"` instead and you get the wider `string`."
+        },
+        {
+          id: "basics-8",
+          type: "mc",
+          prompt: "What type does TypeScript infer for `const mixed = [1, \"two\", true];`?",
+          options: [
+            "`(string | number | boolean)[]`",
+            "`[number, string, boolean]`",
+            "`any[]`",
+            "`unknown[]`"
+          ],
+          correct: 0,
+          explanation: "Array literals are inferred as arrays of a union of their element types, not as tuples. If you want the tuple `[number, string, boolean]`, annotate it or add `as const`."
         }
       ],
       challenges: [
@@ -150,6 +183,46 @@
               ok("describe(42) is a number: 42", typeof d === "function" && d(42) === "a number: 42", "got " + (d && JSON.stringify(d(42)))),
               ok("describe(true) is a boolean: true", typeof d === "function" && d(true) === "a boolean: true", "got " + (d && JSON.stringify(d(true)))),
               ok("describe({}) is something else", typeof d === "function" && d({}) === "something else", "got " + (d && JSON.stringify(d({}))))
+            ];
+          }
+        },
+        {
+          id: "basics-c3",
+          title: "A literal union type",
+          difficulty: "Easy",
+          prompt: 'Define a type <code>Level</code> that only allows the strings <code>"low"</code>, <code>"medium"</code> or <code>"high"</code>. Then make <code>levelToNumber</code> return <code>1</code>, <code>2</code> or <code>3</code> for each level.',
+          starter:
+'// TODO: define a Level type that only allows "low", "medium" or "high"\n\n' +
+'function levelToNumber(level: Level): number {\n' +
+'  // TODO: return 1 for low, 2 for medium, 3 for high\n' +
+'  return 0;\n' +
+'}\n',
+          solution:
+'type Level = "low" | "medium" | "high";\n\n' +
+'function levelToNumber(level: Level): number {\n' +
+'  switch (level) {\n' +
+'    case "low":\n' +
+'      return 1;\n' +
+'    case "medium":\n' +
+'      return 2;\n' +
+'    case "high":\n' +
+'      return 3;\n' +
+'  }\n' +
+'}\n',
+          exposes: ["levelToNumber"],
+          typeTests:
+'// test: Level rejects strings that are not one of the three levels\n' +
+'// @ts-expect-error\n' +
+'levelToNumber("extreme");\n' +
+'// test: Level accepts "medium"\n' +
+'levelToNumber("medium");\n',
+          run: function (ctx) {
+            var f = ctx.exports.levelToNumber;
+            if (typeof f !== "function") return [ok("levelToNumber is defined", false)];
+            return [
+              ok('"low" is 1', f("low") === 1, "got " + JSON.stringify(f("low"))),
+              ok('"medium" is 2', f("medium") === 2, "got " + JSON.stringify(f("medium"))),
+              ok('"high" is 3', f("high") === 3, "got " + JSON.stringify(f("high")))
             ];
           }
         }
@@ -259,6 +332,40 @@
           ],
           correct: 0,
           explanation: "`...nums` gathers every remaining argument into one array named `nums`, typed `number[]`. A rest parameter must come last in the parameter list."
+        },
+        {
+          id: "fn-6",
+          type: "mc",
+          prompt: "What type does TypeScript infer for `const add = (a: number, b: number) => a + b;`?",
+          options: [
+            "`(a: number, b: number) => number`",
+            "`number`",
+            "`Function`",
+            "`any`"
+          ],
+          correct: 0,
+          explanation: "`add` holds a function, so its type is a function type. TypeScript infers the return type `number` from `a + b`, giving `(a: number, b: number) => number`."
+        },
+        {
+          id: "fn-7",
+          type: "mc",
+          prompt: "A function that logs a message and doesn't return anything useful should normally have which return type?",
+          options: ["`void`", "`never`", "`null`", "`any`"],
+          correct: 0,
+          explanation: "`void` means 'callers shouldn't use the return value'. Save `never` for functions that can't finish normally at all, like ones that always throw."
+        },
+        {
+          id: "fn-8",
+          type: "mc",
+          prompt: "Why does this fail under strict mode?\n```\nfunction greet(name?: string) {\n  return \"Hi \" + name.toUpperCase();\n}\n```",
+          options: [
+            "`name` might be `undefined`, so calling `.toUpperCase()` on it isn't safe.",
+            "Optional parameters can't be used in string concatenation.",
+            "`toUpperCase` doesn't exist on strings.",
+            "The function is missing a return type annotation."
+          ],
+          correct: 0,
+          explanation: "An optional parameter's type is really `string | undefined`. With `strictNullChecks` on, you have to deal with `undefined` first — a default value (`name = \"friend\"`), an `if` check, or optional chaining (`name?.toUpperCase()`)."
         }
       ],
       challenges: [
@@ -306,6 +413,38 @@
             return [
               ok("sumAll() is 0", typeof f === "function" && f() === 0, "got " + (f && JSON.stringify(f()))),
               ok("sumAll(1, 2, 3) is 6", typeof f === "function" && f(1, 2, 3) === 6, "got " + (f && JSON.stringify(f(1, 2, 3))))
+            ];
+          }
+        },
+        {
+          id: "fn-c3",
+          title: "Functions as parameters",
+          difficulty: "Medium",
+          prompt: "Type <code>applyTwice</code> so that <code>fn</code> is a function that takes a number and returns a number, <code>value</code> is a number, and the result is a number. Then make it actually apply <code>fn</code> twice: <code>fn(fn(value))</code>.",
+          starter:
+'function applyTwice(fn, value) {\n' +
+'  // TODO: type the parameters and return fn(fn(value))\n' +
+'  return value;\n' +
+'}\n',
+          solution:
+'function applyTwice(fn: (n: number) => number, value: number): number {\n' +
+'  return fn(fn(value));\n' +
+'}\n',
+          exposes: ["applyTwice"],
+          typeTests:
+'// test: fn only accepts functions from number to number\n' +
+'// @ts-expect-error\n' +
+'applyTwice((s: string) => s, 1);\n' +
+'// test: the result is a number\n' +
+'const __twice: number = applyTwice((n) => n + 1, 1);\n',
+          run: function (ctx) {
+            var f = ctx.exports.applyTwice;
+            if (typeof f !== "function") return [ok("applyTwice is defined", false)];
+            var doubled = f(function (n) { return n * 2; }, 3);
+            var incremented = f(function (n) { return n + 1; }, 0);
+            return [
+              ok("applyTwice(n => n * 2, 3) is 12", doubled === 12, "got " + JSON.stringify(doubled)),
+              ok("applyTwice(n => n + 1, 0) is 2", incremented === 2, "got " + JSON.stringify(incremented))
             ];
           }
         }
@@ -413,6 +552,39 @@
           ],
           correct: 0,
           explanation: "Interfaces (unlike `type` aliases) merge when declared more than once with the same name — commonly used to add properties to types from external libraries."
+        },
+        {
+          id: "obj-6",
+          type: "mc",
+          prompt: "What happens here?\n```\ninterface Point { x: number; y: number }\nconst p: Point = { x: 1, y: 2, z: 3 };\n```",
+          options: [
+            "Error: object literal may only specify known properties — `z` doesn't exist on `Point`.",
+            "No error — extra properties are always allowed.",
+            "No error, but `z` is silently removed at runtime.",
+            "`p` becomes type `any`."
+          ],
+          correct: 0,
+          explanation: "This is an 'excess property check'. It only applies to fresh object literals, where an extra key is almost always a typo. Assigning an existing variable that happens to have extra properties is allowed."
+        },
+        {
+          id: "obj-7",
+          type: "mc",
+          prompt: "TypeScript's type system is 'structural'. What does that mean?",
+          options: [
+            "Two types are compatible if their shapes match, regardless of what they're named.",
+            "Types must have the same name to be compatible.",
+            "Every object has to be created from a class.",
+            "Types are checked at runtime as well as compile time."
+          ],
+          correct: 0,
+          explanation: "If an object has every property a type requires (with the right types), it satisfies that type — no `implements` or shared name needed. This is sometimes called 'duck typing, checked at compile time'."
+        },
+        {
+          id: "obj-8",
+          type: "text",
+          prompt: "Which keyword makes one interface inherit all the properties of another, as in `interface Dog ___ Animal { breed: string }`?",
+          accept: ["extends"],
+          explanation: "`interface Dog extends Animal` gives Dog everything Animal has, plus its own extra properties. An interface can even extend several others at once: `extends A, B`."
         }
       ],
       challenges: [
@@ -480,6 +652,44 @@
               ok("new config has the new timeout", !!c2 && c2.timeoutMs === 5000, "got " + JSON.stringify(c2)),
               ok("new config kept apiUrl", !!c2 && c2.apiUrl === "x", "got " + JSON.stringify(c2)),
               ok("a genuinely new object was returned", c2 !== c)
+            ];
+          }
+        },
+        {
+          id: "obj-c3",
+          title: "A dictionary with an index signature",
+          difficulty: "Medium",
+          prompt: "Define an interface <code>Inventory</code> with an index signature: any string key, number values. Then write <code>addStock(inv, item, qty)</code> that returns a <em>new</em> inventory with <code>qty</code> added to that item (items that aren't there yet start at 0).",
+          starter:
+'// TODO: define Inventory with an index signature (string keys, number values)\n\n' +
+'function addStock(inv: Inventory, item: string, qty: number): Inventory {\n' +
+'  // TODO: return a NEW inventory with qty added to item\n' +
+'  return inv;\n' +
+'}\n',
+          solution:
+'interface Inventory {\n' +
+'  [item: string]: number;\n' +
+'}\n\n' +
+'function addStock(inv: Inventory, item: string, qty: number): Inventory {\n' +
+'  return { ...inv, [item]: (inv[item] ?? 0) + qty };\n' +
+'}\n',
+          exposes: ["addStock"],
+          typeTests:
+'// test: Inventory values must be numbers\n' +
+'// @ts-expect-error\n' +
+'const __badInventory: Inventory = { apples: "lots" };\n' +
+'// test: Inventory accepts any string key\n' +
+'const __goodInventory: Inventory = { apples: 3, pears: 0 };\n',
+          run: function (ctx) {
+            var f = ctx.exports.addStock;
+            if (typeof f !== "function") return [ok("addStock is defined", false)];
+            var original = { apples: 2 };
+            var more = f(original, "apples", 3);
+            var fresh = f({}, "pears", 1);
+            return [
+              ok("adds to an existing item", more.apples === 5, "got " + JSON.stringify(more)),
+              ok("new items start at 0", fresh.pears === 1, "got " + JSON.stringify(fresh)),
+              ok("the original inventory is untouched", original.apples === 2 && more !== original, "got " + JSON.stringify(original))
             ];
           }
         }
@@ -583,6 +793,45 @@
           ],
           correct: 0,
           explanation: "A class is both a type (you can write `x: MyClass`) and a value (you can write `new MyClass()`). An interface is only ever a type — it disappears entirely once compiled."
+        },
+        {
+          id: "cls-6",
+          type: "mc",
+          prompt: "What does the `readonly` modifier on a class property do?",
+          options: [
+            "The property can be set where it's declared or in the constructor, but never after that.",
+            "The property can never be assigned at all.",
+            "It makes the property static.",
+            "It makes the property private."
+          ],
+          correct: 0,
+          explanation: "`readonly` properties get their value once — at the declaration or inside the constructor — and are locked after that. Great for IDs and other values that should never change."
+        },
+        {
+          id: "cls-7",
+          type: "mc",
+          prompt: "What is a `static` class member?",
+          options: [
+            "A member that belongs to the class itself rather than each instance, accessed as `ClassName.member`.",
+            "A member whose value can't change.",
+            "A private member.",
+            "A member that only subclasses can use."
+          ],
+          correct: 0,
+          explanation: "Static members are shared: there's one copy on the class, not one per object. They're common for counters, caches, and factory methods like `User.fromJson(...)`."
+        },
+        {
+          id: "cls-8",
+          type: "mc",
+          prompt: "Which line is a compile error?\n```\nclass Animal {\n  protected name: string;\n  constructor(name: string) { this.name = name; }\n}\nclass Dog extends Animal {\n  bark() { return this.name + \" says woof\"; }\n}\nconst d = new Dog(\"Rex\");\nd.name;\n```",
+          options: [
+            "`d.name;` — protected members can't be read from outside the class and its subclasses.",
+            "`this.name` inside `Dog` — subclasses can't see protected members.",
+            "`new Dog(\"Rex\")` — Dog doesn't define its own constructor.",
+            "None of them — it all compiles."
+          ],
+          correct: 0,
+          explanation: "`protected` sits between `public` and `private`: Dog can use `this.name` because it's a subclass, but code outside the class hierarchy can't touch it. Dog also inherits Animal's constructor automatically."
         }
       ],
       challenges: [
@@ -668,6 +917,45 @@
             return [
               ok("area() computes width * height", r.area() === 12, "got " + r.area()),
               ok("Rectangle is a Shape", typeof Shape === "function" && r instanceof Shape)
+            ];
+          }
+        },
+        {
+          id: "cls-c3",
+          title: "Static and readonly",
+          difficulty: "Medium",
+          prompt: "Write a class <code>Ticket</code> with a <code>static count</code> (a number starting at 0, shared by every ticket) and a <code>readonly id</code>. Each new ticket increments <code>Ticket.count</code> and uses it as its id, so the first ticket gets id <code>1</code>, the second <code>2</code>, and so on.",
+          starter:
+'class Ticket {\n' +
+'  // TODO: a static count shared by every Ticket, starting at 0\n' +
+'  // TODO: a readonly id, set in the constructor (first ticket gets 1)\n' +
+'}\n',
+          solution:
+'class Ticket {\n' +
+'  static count: number = 0;\n' +
+'  readonly id: number;\n\n' +
+'  constructor() {\n' +
+'    Ticket.count += 1;\n' +
+'    this.id = Ticket.count;\n' +
+'  }\n' +
+'}\n',
+          exposes: ["Ticket"],
+          typeTests:
+'// test: id is readonly, so it cannot be reassigned\n' +
+'const __ticket = new Ticket();\n' +
+'// @ts-expect-error\n' +
+'__ticket.id = 5;\n' +
+'// test: id is a number\n' +
+'const __ticketId: number = __ticket.id;\n',
+          run: function (ctx) {
+            var Ticket = ctx.exports.Ticket;
+            if (typeof Ticket !== "function") return [ok("Ticket is defined", false)];
+            var t1 = new Ticket();
+            var t2 = new Ticket();
+            return [
+              ok("first ticket has id 1", t1.id === 1, "got " + JSON.stringify(t1.id)),
+              ok("second ticket has id 2", t2.id === 2, "got " + JSON.stringify(t2.id)),
+              ok("Ticket.count is 2", Ticket.count === 2, "got " + JSON.stringify(Ticket.count))
             ];
           }
         }
@@ -775,6 +1063,45 @@
           ],
           correct: 0,
           explanation: "`Box<T>` is a template: `Box<string>` is a box of strings, `Box<User>` is a box of Users, all sharing the same implementation."
+        },
+        {
+          id: "gen-6",
+          type: "mc",
+          prompt: "When you call `identity(\"hello\")` for `function identity<T>(value: T): T`, how does TypeScript decide what `T` is?",
+          options: [
+            "It infers `T` from the argument you passed, so you rarely need to write `identity<string>(...)` yourself.",
+            "You must always write the type explicitly, like `identity<string>(...)`.",
+            "`T` defaults to `any`.",
+            "`T` is always `unknown`."
+          ],
+          correct: 0,
+          explanation: "Generic type arguments are usually inferred from the values you pass in. Writing them explicitly is only needed when there's nothing to infer from, or you want to force a specific type."
+        },
+        {
+          id: "gen-7",
+          type: "mc",
+          prompt: "What does `Array<string>` mean?",
+          options: [
+            "Exactly the same as `string[]` — it's the built-in generic `Array` type with `T = string`.",
+            "An array of arrays of strings.",
+            "A tuple containing one string.",
+            "A string that behaves like an array."
+          ],
+          correct: 0,
+          explanation: "`string[]` is just shorthand for `Array<string>`. Seeing it written the long way makes it clear that arrays are one of the generic types you use all the time."
+        },
+        {
+          id: "gen-8",
+          type: "mc",
+          prompt: "An `async` function's return type is `Promise<number>`. What does that tell you?",
+          options: [
+            "When you `await` it, you get a `number`.",
+            "It returns a `number` immediately, without waiting.",
+            "The promise can resolve to any type.",
+            "The function takes a `number` argument."
+          ],
+          correct: 0,
+          explanation: "`Promise<T>` is generic over the value it eventually resolves to. `async` functions always return a promise, so `async function f(): Promise<number>` gives you a number once awaited."
         }
       ],
       challenges: [
@@ -793,6 +1120,12 @@
 '  return [value];\n' +
 '}\n',
           exposes: ["wrapInArray"],
+          typeTests:
+'// test: wrapInArray(5) is typed number[]\n' +
+'const __wrapped: number[] = wrapInArray(5);\n' +
+'// test: wrapInArray(5) is not loosely typed (e.g. any[])\n' +
+'// @ts-expect-error\n' +
+'const __wrongWrap: string[] = wrapInArray(5);\n',
           run: function (ctx) {
             var f = ctx.exports.wrapInArray;
             if (typeof f !== "function") return [ok("wrapInArray is defined", false)];
@@ -817,6 +1150,14 @@
 '  return obj[key];\n' +
 '}\n',
           exposes: ["getProperty"],
+          typeTests:
+'// test: key must be a real key of obj\n' +
+'// @ts-expect-error\n' +
+'getProperty({ a: 1 }, "b");\n' +
+'// test: the return type matches the property type\n' +
+'const __propValue: number = getProperty({ a: 1 }, "a");\n' +
+'// @ts-expect-error\n' +
+'const __wrongProp: string = getProperty({ a: 1 }, "a");\n',
           run: function (ctx) {
             var f = ctx.exports.getProperty;
             if (typeof f !== "function") return [ok("getProperty is defined", false)];
@@ -824,6 +1165,66 @@
             return [
               ok('getProperty(p, "name") is "Ada"', f(p, "name") === "Ada", "got " + JSON.stringify(f(p, "name"))),
               ok('getProperty(p, "age") is 30', f(p, "age") === 30, "got " + JSON.stringify(f(p, "age")))
+            ];
+          }
+        },
+        {
+          id: "gen-c3",
+          title: "A generic Stack class",
+          difficulty: "Medium",
+          prompt: "Write a generic class <code>Stack&lt;T&gt;</code> with:" +
+            "<ul>" +
+            "<li><code>push(item: T): void</code></li>" +
+            "<li><code>pop(): T | undefined</code> &mdash; removes and returns the top item</li>" +
+            "<li><code>peek(): T | undefined</code> &mdash; returns the top item without removing it</li>" +
+            "<li><code>size(): number</code></li>" +
+            "</ul>",
+          starter:
+'class Stack {\n' +
+'  // TODO: make this generic (Stack<T>) with push, pop, peek and size\n' +
+'}\n',
+          solution:
+'class Stack<T> {\n' +
+'  private items: T[] = [];\n\n' +
+'  push(item: T): void {\n' +
+'    this.items.push(item);\n' +
+'  }\n\n' +
+'  pop(): T | undefined {\n' +
+'    return this.items.pop();\n' +
+'  }\n\n' +
+'  peek(): T | undefined {\n' +
+'    return this.items[this.items.length - 1];\n' +
+'  }\n\n' +
+'  size(): number {\n' +
+'    return this.items.length;\n' +
+'  }\n' +
+'}\n',
+          exposes: ["Stack"],
+          typeTests:
+'// test: Stack is generic, and a Stack<number> only accepts numbers\n' +
+'const __stack = new Stack<number>();\n' +
+'// @ts-expect-error\n' +
+'__stack.push("nope");\n' +
+'// test: pop() returns T | undefined\n' +
+'const __popped: number | undefined = __stack.pop();\n' +
+'// @ts-expect-error\n' +
+'const __poppedWrong: string | undefined = __stack.pop();\n',
+          run: function (ctx) {
+            var Stack = ctx.exports.Stack;
+            if (typeof Stack !== "function") return [ok("Stack is defined", false)];
+            var s = new Stack();
+            s.push(1);
+            s.push(2);
+            var peeked = s.peek();
+            var sizeAfterPush = s.size();
+            var first = s.pop();
+            var second = s.pop();
+            var third = s.pop();
+            return [
+              ok("peek() shows the last item pushed", peeked === 2, "got " + JSON.stringify(peeked)),
+              ok("size() counts the items", sizeAfterPush === 2, "got " + JSON.stringify(sizeAfterPush)),
+              ok("pop() returns items last-in, first-out", first === 2 && second === 1, "got " + JSON.stringify([first, second])),
+              ok("pop() on an empty stack returns undefined", third === undefined, "got " + JSON.stringify(third))
             ];
           }
         }
@@ -934,6 +1335,45 @@
           ],
           correct: 0,
           explanation: "Intersections are most often used to combine several object shapes into one that has every property from each."
+        },
+        {
+          id: "un-6",
+          type: "mc",
+          prompt: "What does `strictNullChecks` (part of `strict`) change?",
+          options: [
+            "`null` and `undefined` are no longer allowed everywhere — you have to include them explicitly, e.g. `string | null`.",
+            "`null` becomes a syntax error.",
+            "Every variable must be initialized to `null`.",
+            "It removes `undefined` from JavaScript."
+          ],
+          correct: 0,
+          explanation: "Without it, `null` and `undefined` sneak into every type, which is where most 'cannot read properties of undefined' crashes come from. With it, a `string` is really always a string."
+        },
+        {
+          id: "un-7",
+          type: "mc",
+          prompt: "What is the type of `x` in each branch?\n```\nfunction len(x: string | string[]) {\n  if (Array.isArray(x)) {\n    return x.length; // here?\n  }\n  return x.length;   // and here?\n}\n```",
+          options: [
+            "`string[]` in the first branch, `string` in the second.",
+            "`string | string[]` in both.",
+            "`any` in both.",
+            "`string[]` in both."
+          ],
+          correct: 0,
+          explanation: "`Array.isArray` is a built-in type guard. Inside the `if`, TypeScript knows `x` is the array. After the `if` returns, the only possibility left is `string` — this is called control-flow narrowing."
+        },
+        {
+          id: "un-8",
+          type: "mc",
+          prompt: "Why do people assign the value to a `never` variable in a `switch`'s `default` case (an 'exhaustiveness check')?",
+          options: [
+            "If someone later adds a new variant to the union and forgets to handle it, that assignment becomes a compile error.",
+            "It makes the switch statement run faster.",
+            "It catches errors at runtime.",
+            "`switch` requires it in TypeScript."
+          ],
+          correct: 0,
+          explanation: "When every case is handled, the value in `default` has been narrowed down to `never`, so the assignment is fine. Add a new, unhandled variant and it no longer narrows to `never` — the compiler points you straight at the switch you forgot to update."
         }
       ],
       challenges: [
@@ -996,6 +1436,59 @@
             return [
               ok("circle area is πr²", Math.abs(circle - Math.PI * 4) < 0.0001, "got " + circle),
               ok("square area is side²", square === 9, "got " + square)
+            ];
+          }
+        },
+        {
+          id: "un-c3",
+          title: "Exhaustiveness checking",
+          difficulty: "Medium",
+          prompt: "The <code>default</code> branch assigns <code>e</code> to a <code>never</code> variable. Right now that's a compile error, because two event types aren't handled yet. Add the missing cases so the function returns <code>pressed {key}</code> for keypresses and <code>scrolled {delta}</code> for scrolls.",
+          starter:
+'type AppEvent =\n' +
+'  | { type: "click"; x: number; y: number }\n' +
+'  | { type: "keypress"; key: string }\n' +
+'  | { type: "scroll"; delta: number };\n\n' +
+'function describeEvent(e: AppEvent): string {\n' +
+'  switch (e.type) {\n' +
+'    case "click":\n' +
+'      return `click at ${e.x},${e.y}`;\n' +
+'    default: {\n' +
+'      const unhandled: never = e;\n' +
+'      return unhandled;\n' +
+'    }\n' +
+'  }\n' +
+'}\n',
+          solution:
+'type AppEvent =\n' +
+'  | { type: "click"; x: number; y: number }\n' +
+'  | { type: "keypress"; key: string }\n' +
+'  | { type: "scroll"; delta: number };\n\n' +
+'function describeEvent(e: AppEvent): string {\n' +
+'  switch (e.type) {\n' +
+'    case "click":\n' +
+'      return `click at ${e.x},${e.y}`;\n' +
+'    case "keypress":\n' +
+'      return `pressed ${e.key}`;\n' +
+'    case "scroll":\n' +
+'      return `scrolled ${e.delta}`;\n' +
+'    default: {\n' +
+'      const unhandled: never = e;\n' +
+'      return unhandled;\n' +
+'    }\n' +
+'  }\n' +
+'}\n',
+          exposes: ["describeEvent"],
+          run: function (ctx) {
+            var f = ctx.exports.describeEvent;
+            if (typeof f !== "function") return [ok("describeEvent is defined", false)];
+            var click = f({ type: "click", x: 3, y: 4 });
+            var key = f({ type: "keypress", key: "Enter" });
+            var scroll = f({ type: "scroll", delta: 120 });
+            return [
+              ok("click events still work", click === "click at 3,4", "got " + JSON.stringify(click)),
+              ok("keypress returns pressed Enter", key === "pressed Enter", "got " + JSON.stringify(key)),
+              ok("scroll returns scrolled 120", scroll === "scrolled 120", "got " + JSON.stringify(scroll))
             ];
           }
         }
@@ -1105,6 +1598,40 @@
           ],
           correct: 0,
           explanation: "`Record<K, V>` is a shorthand for an object/dictionary type — equivalent to writing an index signature `{ [key: K]: V }`."
+        },
+        {
+          id: "util-6",
+          type: "mc",
+          prompt: "What does `Readonly<User>` produce?",
+          options: [
+            "A version of User where every property is `readonly`.",
+            "A frozen copy of the object at runtime.",
+            "User with all its methods removed.",
+            "User with every property made optional."
+          ],
+          correct: 0,
+          explanation: "`Readonly<T>` is a mapped type that adds `readonly` to every property — handy for function parameters you promise not to modify. Like all types, it has no runtime effect; `Object.freeze` is the runtime equivalent."
+        },
+        {
+          id: "util-7",
+          type: "mc",
+          prompt: "What is `Exclude<\"a\" | \"b\" | \"c\", \"a\">`?",
+          options: [
+            "`\"b\" | \"c\"`",
+            "`\"a\"`",
+            "`\"a\" | \"b\" | \"c\"`",
+            "`never`"
+          ],
+          correct: 0,
+          explanation: "`Exclude<T, U>` removes from union T every member that's assignable to U. Its opposite is `Extract<T, U>`, which keeps only those members."
+        },
+        {
+          id: "util-8",
+          type: "mc",
+          prompt: "Given this conditional type, what is `IsString<number>`?\n```\ntype IsString<T> = T extends string ? \"yes\" : \"no\";\n```",
+          options: ["`\"no\"`", "`\"yes\"`", "`boolean`", "`never`"],
+          correct: 0,
+          explanation: "Conditional types read like a ternary at the type level: if T is assignable to `string`, the result is `\"yes\"`, otherwise `\"no\"`. `number` isn't a string, so you get `\"no\"`. Many built-in utilities, like `Exclude` and `ReturnType`, are built from conditional types."
         }
       ],
       challenges: [
@@ -1182,6 +1709,44 @@
               ok('two words start with "a"', r.a === 2, "got " + JSON.stringify(r)),
               ok('one word starts with "b"', r.b === 1, "got " + JSON.stringify(r))
             ];
+          }
+        },
+        {
+          id: "util-c3",
+          title: "Write your own mapped type",
+          difficulty: "Hard",
+          prompt: "Replace the placeholder with a real mapped type: <code>Nullable&lt;T&gt;</code> should keep every property of <code>T</code> with the same keys, but let each one also be <code>null</code>. When it's right, <code>draft</code> compiles. This one is checked purely by hidden type tests &mdash; there's nothing to run.",
+          starter:
+'interface User {\n' +
+'  id: number;\n' +
+'  name: string;\n' +
+'}\n\n' +
+'// TODO: every property of T should also accept null\n' +
+'type Nullable<T> = T;\n\n' +
+'const draft: Nullable<User> = { id: null, name: null };\n',
+          solution:
+'interface User {\n' +
+'  id: number;\n' +
+'  name: string;\n' +
+'}\n\n' +
+'type Nullable<T> = {\n' +
+'  [K in keyof T]: T[K] | null;\n' +
+'};\n\n' +
+'const draft: Nullable<User> = { id: null, name: null };\n',
+          exposes: [],
+          typeTests:
+'// test: Nullable<T> lets each property be null\n' +
+'const __nullable1: Nullable<{ a: number; b: string }> = { a: null, b: "x" };\n' +
+'// test: Nullable<T> still allows the original types\n' +
+'const __nullable2: Nullable<{ a: number }> = { a: 5 };\n' +
+'// test: Nullable<T> still rejects the wrong type (it is not just any)\n' +
+'// @ts-expect-error\n' +
+'const __nullable3: Nullable<{ a: number }> = { a: "nope" };\n' +
+'// test: Nullable<T> keeps exactly the same keys\n' +
+'// @ts-expect-error\n' +
+'const __nullable4: Nullable<{ a: number }> = { a: 1, extra: true };\n',
+          run: function () {
+            return [ok("Nullable<T> passes every hidden type test", true)];
           }
         }
       ],
@@ -1273,6 +1838,58 @@
           ],
           correct: 0,
           explanation: "`import type` documents intent and lets build tools safely strip the import entirely, since they can be sure nothing at runtime depends on it."
+        },
+        {
+          id: "rw-5",
+          type: "mc",
+          prompt: "What does a type assertion like `const user = data as User` actually do?",
+          options: [
+            "Tells the compiler to treat the value as `User` without checking anything at runtime — if you're wrong, things break later.",
+            "Converts the data into a `User` at runtime.",
+            "Validates that the data has every `User` property.",
+            "Works exactly like a type guard."
+          ],
+          correct: 0,
+          explanation: "`as` is you overruling the compiler, and nothing checks it while the code runs. It's fine when you genuinely know more than TypeScript does, but for outside data (API responses, JSON), validate first with a type guard."
+        },
+        {
+          id: "rw-6",
+          type: "mc",
+          prompt: "What does the `satisfies` operator do, as in `const config = { port: 3000 } satisfies Config;`?",
+          options: [
+            "Checks that the value matches `Config`, while keeping the value's own more specific inferred type.",
+            "Changes `config`'s type to exactly `Config`.",
+            "Casts the value without checking it, like `as`.",
+            "Validates the object at runtime."
+          ],
+          correct: 0,
+          explanation: "With `const config: Config = ...`, the variable's type becomes `Config` and you lose the specifics (e.g. that `port` is exactly `3000`). `satisfies` gives you the check without widening, so you get both safety and precise types."
+        },
+        {
+          id: "rw-7",
+          type: "mc",
+          prompt: "You install a JavaScript package and TypeScript says \"Could not find a declaration file for module\". What's the usual first fix?",
+          options: [
+            "Install its community types, e.g. `npm install --save-dev @types/package-name`.",
+            "Rewrite the package in TypeScript.",
+            "Turn off `strict` mode.",
+            "Delete `node_modules` and reinstall."
+          ],
+          correct: 0,
+          explanation: "Most popular JavaScript packages have community-maintained types in the DefinitelyTyped project, published as `@types/...`. If none exist, you can write a small `declare module` file yourself."
+        },
+        {
+          id: "rw-8",
+          type: "mc",
+          prompt: "Your project builds with a fast bundler like Vite or esbuild. Where do you actually catch type errors?",
+          options: [
+            "Those tools usually only strip types without checking them, so projects run `tsc --noEmit` (in the editor, a script, or CI) to type-check.",
+            "The bundler always refuses to build if there are type errors.",
+            "Type errors show up in the browser console at runtime.",
+            "You can't get type errors when using a bundler."
+          ],
+          correct: 0,
+          explanation: "For speed, many build tools treat TypeScript as 'JavaScript with types to delete'. Type checking is a separate step — your editor shows errors as you type, and `tsc --noEmit` in CI stops broken types from being merged."
         }
       ],
       challenges: [
@@ -1306,6 +1923,15 @@
 '  throw new Error("Invalid user");\n' +
 '}\n',
           exposes: ["isUser", "parseUser"],
+          typeTests:
+'// test: isUser is a type predicate that narrows unknown to a user\n' +
+'declare const __maybeUser: unknown;\n' +
+'if (isUser(__maybeUser)) {\n' +
+'  const __userId: number = __maybeUser.id;\n' +
+'  const __userName: string = __maybeUser.name;\n' +
+'}\n' +
+'// test: parseUser returns a typed user, not unknown\n' +
+'const __parsedName: string = parseUser({}).name;\n',
           run: function (ctx) {
             var parseUser = ctx.exports.parseUser;
             var isUser = ctx.exports.isUser;
@@ -1325,6 +1951,64 @@
               ok("accepts a valid user", good && good.id === 1 && good.name === "Ada", "got " + JSON.stringify(good)),
               ok("rejects junk via isUser", isUser("nope") === false),
               ok("parseUser throws on invalid data", threw && message === "Invalid user", "got " + JSON.stringify(message))
+            ];
+          }
+        },
+        {
+          id: "rw-c2",
+          title: "Replace the anys with generics",
+          difficulty: "Hard",
+          prompt: "This <code>groupBy</code> helper works at runtime, but it's typed with <code>any</code> everywhere, so callers get no help. Rewrite its signature with generics: <code>T</code> for the item type and <code>K extends string</code> for the key that <code>getKey</code> returns. Return <code>Partial&lt;Record&lt;K, T[]&gt;&gt;</code> &mdash; <code>Partial</code> because a group might have no items.",
+          starter:
+'interface Order {\n' +
+'  id: number;\n' +
+'  status: "paid" | "unpaid";\n' +
+'}\n\n' +
+'// TODO: replace the anys with generics (T for items, K for keys)\n' +
+'function groupBy(items: any[], getKey: (item: any) => any): any {\n' +
+'  const groups: any = {};\n' +
+'  for (const item of items) {\n' +
+'    const key = getKey(item);\n' +
+'    (groups[key] ??= []).push(item);\n' +
+'  }\n' +
+'  return groups;\n' +
+'}\n',
+          solution:
+'interface Order {\n' +
+'  id: number;\n' +
+'  status: "paid" | "unpaid";\n' +
+'}\n\n' +
+'function groupBy<T, K extends string>(items: T[], getKey: (item: T) => K): Partial<Record<K, T[]>> {\n' +
+'  const groups: Partial<Record<K, T[]>> = {};\n' +
+'  for (const item of items) {\n' +
+'    const key = getKey(item);\n' +
+'    const list = groups[key] ?? [];\n' +
+'    list.push(item);\n' +
+'    groups[key] = list;\n' +
+'  }\n' +
+'  return groups;\n' +
+'}\n',
+          exposes: ["groupBy"],
+          typeTests:
+'declare const __orders: Order[];\n' +
+'// test: the callback parameter is typed from the items (Order), not any\n' +
+'// @ts-expect-error\n' +
+'groupBy(__orders, (o) => o.missing);\n' +
+'// test: the result is keyed by what getKey returns\n' +
+'const __groups = groupBy(__orders, (o) => o.status);\n' +
+'const __paidOrders: Order[] | undefined = __groups.paid;\n' +
+'// test: keys that getKey can never return are rejected\n' +
+'// @ts-expect-error\n' +
+'__groups.refunded;\n',
+          run: function (ctx) {
+            var f = ctx.exports.groupBy;
+            if (typeof f !== "function") return [ok("groupBy is defined", false)];
+            var orders = [{ id: 1, status: "paid" }, { id: 2, status: "unpaid" }, { id: 3, status: "paid" }];
+            var g = f(orders, function (o) { return o.status; });
+            var ids = function (list) { return (list || []).map(function (o) { return o.id; }); };
+            return [
+              ok("paid orders are grouped together", JSON.stringify(ids(g.paid)) === "[1,3]", "got " + JSON.stringify(ids(g.paid))),
+              ok("unpaid orders are grouped together", JSON.stringify(ids(g.unpaid)) === "[2]", "got " + JSON.stringify(ids(g.unpaid)))
             ];
           }
         }
@@ -1604,7 +2288,47 @@
   }
 
   function md(s) {
-    return esc(s).replace(/`([^`]+)`/g, "<code>$1</code>");
+    return esc(s)
+      .replace(/```\w*\n?([\s\S]*?)\n?```/g, "<pre><code>$1</code></pre>")
+      .replace(/`([^`\n]+)`/g, "<code>$1</code>");
+  }
+
+  function normalizeAnswer(s) {
+    return String(s).replace(/[`;]/g, "").replace(/\s+/g, "").toLowerCase();
+  }
+
+  var THEMES = [
+    { id: "paper", label: "Paper", bg: "#f6f1e7", accent: "#cf5628" },
+    { id: "midnight", label: "Midnight", bg: "#171513", accent: "#e8794a" },
+    { id: "ts-blue", label: "TS Blue", bg: "#f2f5fa", accent: "#3178c6" },
+    { id: "terminal", label: "Terminal", bg: "#0b0f0b", accent: "#39ff88" },
+    { id: "contrast", label: "High contrast", bg: "#ffffff", accent: "#0033cc" }
+  ];
+  var THEME_STORAGE_KEY = STORAGE_PREFIX + "theme";
+  var themePickerEl = document.getElementById("theme-picker");
+
+  function currentTheme() {
+    var t = document.documentElement.getAttribute("data-theme");
+    return THEMES.some(function (th) { return th.id === t; }) ? t : "paper";
+  }
+
+  function renderThemePicker() {
+    var active = currentTheme();
+    themePickerEl.innerHTML = '<span class="theme-label">Theme</span>';
+    THEMES.forEach(function (theme) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.setAttribute("aria-pressed", theme.id === active ? "true" : "false");
+      btn.innerHTML =
+        '<span class="swatch" style="background: linear-gradient(135deg, ' + theme.bg + " 50%, " + theme.accent + ' 50%)"></span>' +
+        esc(theme.label);
+      btn.addEventListener("click", function () {
+        document.documentElement.setAttribute("data-theme", theme.id);
+        localStorage.setItem(THEME_STORAGE_KEY, theme.id);
+        renderThemePicker();
+      });
+      themePickerEl.appendChild(btn);
+    });
   }
 
   function warmEngine() {
@@ -1634,7 +2358,7 @@
     });
   }
 
-  function renderTheoryQuestion(q) {
+  function renderTheoryQuestion(q, index, total) {
     var answeredCorrect = isTheoryCorrect(q.id);
     var wrap = document.createElement("div");
     wrap.className = "theory-q" + (answeredCorrect ? " answered correct" : "");
@@ -1650,7 +2374,8 @@
     }
 
     wrap.innerHTML =
-      '<p class="q-prompt">' + md(q.prompt) + "</p>" +
+      '<div class="q-number">Question ' + (index + 1) + " of " + total + "</div>" +
+      '<div class="q-prompt">' + md(q.prompt) + "</div>" +
       optionsHtml +
       '<div class="q-controls">' +
       '<button class="btn primary q-check-btn">' + (answeredCorrect ? "Check again" : "Check") + "</button>" +
@@ -1665,18 +2390,27 @@
       if (q.type === "mc") {
         var inputs = wrap.querySelectorAll('input[type="radio"]');
         inputs[q.correct].checked = true;
+      } else {
+        wrap.querySelector(".q-text-input").value = q.accept[0];
       }
     }
 
-    wrap.querySelector(".q-check-btn").addEventListener("click", function () {
+    var checkBtn = wrap.querySelector(".q-check-btn");
+    var textInput = wrap.querySelector(".q-text-input");
+    if (textInput) {
+      textInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") checkBtn.click();
+      });
+    }
+
+    checkBtn.addEventListener("click", function () {
       var correct;
       if (q.type === "mc") {
         var checked = wrap.querySelector('input[type="radio"]:checked');
         correct = checked !== null && Number(checked.value) === q.correct;
       } else {
-        var input = wrap.querySelector(".q-text-input");
-        var value = input.value.trim().toLowerCase();
-        correct = q.accept.some(function (a) { return a.toLowerCase() === value; });
+        var value = normalizeAnswer(textInput.value);
+        correct = value !== "" && q.accept.some(function (a) { return normalizeAnswer(a) === value; });
       }
 
       var feedback = wrap.querySelector(".q-feedback");
@@ -1709,6 +2443,14 @@
     });
   }
 
+  function describeTypeTest(testLines, index) {
+    for (var i = Math.min(index, testLines.length - 1); i >= 0; i--) {
+      var m = /^\s*\/\/\s*test:\s*(.*)$/.exec(testLines[i]);
+      if (m) return m[1];
+    }
+    return "a hidden type check";
+  }
+
   function renderChallenge(challenge) {
     var solved = isChallengeSolved(challenge.id);
     var wrap = document.createElement("div");
@@ -1722,6 +2464,7 @@
       (solved ? '<span class="solved-tag">✓ solved</span>' : "") +
       "</div>" +
       '<div class="prompt">' + challenge.prompt + "</div>" +
+      (challenge.typeTests ? '<p class="type-test-note">Hidden type tests also check your types, not just what your code outputs.</p>' : "") +
       '<div class="pane-label">Your code (.ts)</div>' +
       '<textarea class="editor" wrap="off" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>' +
       '<div class="controls">' +
@@ -1788,13 +2531,21 @@
         })
         .then(function (bundle) {
           var code = editorEl.value;
-          var diags = checkTypes(bundle.ts, bundle.libFiles, code);
+          var userLineCount = code.split("\n").length;
+          var testLines = challenge.typeTests ? challenge.typeTests.split("\n") : [];
+          var source = challenge.typeTests ? code + "\n" + challenge.typeTests : code;
+          var diags = checkTypes(bundle.ts, bundle.libFiles, source);
           if (diags.length > 0) {
             diagnosticsEl.hidden = false;
             diagListEl.innerHTML = "";
             diags.forEach(function (d) {
               var li = document.createElement("li");
-              li.textContent = (d.line ? "Line " + d.line + ": " : "") + d.message;
+              if (d.line && d.line > userLineCount) {
+                li.textContent = "Hidden type test failed: " + describeTypeTest(testLines, d.line - userLineCount - 1) +
+                  (/Unused '@ts-expect-error'/.test(d.message) ? " (expected a type error here, but there wasn't one)" : " (" + d.message + ")");
+              } else {
+                li.textContent = (d.line ? "Line " + d.line + ": " : "") + d.message;
+              }
               diagListEl.appendChild(li);
             });
             setStatus("");
@@ -1899,8 +2650,8 @@
     theoryHeading.className = "section-heading";
     theoryHeading.textContent = "Theory";
     chapterViewEl.appendChild(theoryHeading);
-    chapter.theory.forEach(function (q) {
-      chapterViewEl.appendChild(renderTheoryQuestion(q));
+    chapter.theory.forEach(function (q, i) {
+      chapterViewEl.appendChild(renderTheoryQuestion(q, i, chapter.theory.length));
     });
 
     var challengeHeading = document.createElement("div");
@@ -1929,6 +2680,7 @@
     window.scrollTo(0, 0);
   }
 
+  renderThemePicker();
   renderChapterList();
   updateOverallProgress();
   selectChapter(currentChapterId);

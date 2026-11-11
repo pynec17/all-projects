@@ -1,12 +1,111 @@
-:root {
+:root,
+:root[data-theme="paper"] {
   --bg: #f6f1e7;
   --surface: #fffdf8;
+  --card: #fbf8f1;
+  --editor-bg: #ffffff;
   --text: #221d16;
   --muted: #8b8171;
   --accent: #cf5628;
+  --on-accent: #ffffff;
   --border: #e7ddc9;
   --pass: #3f7d4f;
   --fail: #c23c2a;
+  --pass-bg: rgba(63, 125, 79, 0.1);
+  --fail-bg: rgba(194, 60, 42, 0.1);
+  --code-bg: #26221a;
+  --code-text: #f1ece0;
+  --heading-font: "Fraunces", serif;
+  --heading-style: italic;
+  --heading-weight: 600;
+  --body-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color-scheme: light;
+}
+
+:root[data-theme="midnight"] {
+  --bg: #171513;
+  --surface: #211e1a;
+  --card: #1c1a17;
+  --editor-bg: #141210;
+  --text: #ece5d8;
+  --muted: #a09684;
+  --accent: #e8794a;
+  --on-accent: #1a1410;
+  --border: #3a342c;
+  --pass: #7cc48f;
+  --fail: #f07a66;
+  --pass-bg: rgba(124, 196, 143, 0.12);
+  --fail-bg: rgba(240, 122, 102, 0.12);
+  --code-bg: #0f0e0c;
+  --code-text: #ece5d8;
+  color-scheme: dark;
+}
+
+:root[data-theme="ts-blue"] {
+  --bg: #f2f5fa;
+  --surface: #ffffff;
+  --card: #f7f9fc;
+  --editor-bg: #ffffff;
+  --text: #16202c;
+  --muted: #5d6f82;
+  --accent: #3178c6;
+  --on-accent: #ffffff;
+  --border: #d6dfea;
+  --pass: #1f7a4a;
+  --fail: #c23a3a;
+  --pass-bg: rgba(31, 122, 74, 0.09);
+  --fail-bg: rgba(194, 58, 58, 0.09);
+  --code-bg: #1e2a3a;
+  --code-text: #e6edf6;
+  --heading-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --heading-style: normal;
+  --heading-weight: 700;
+  color-scheme: light;
+}
+
+:root[data-theme="terminal"] {
+  --bg: #0b0f0b;
+  --surface: #0f150f;
+  --card: #0d120d;
+  --editor-bg: #070a07;
+  --text: #c8f7c5;
+  --muted: #6fa86b;
+  --accent: #39ff88;
+  --on-accent: #03140a;
+  --border: #1f3a1f;
+  --pass: #39ff88;
+  --fail: #ff6b6b;
+  --pass-bg: rgba(57, 255, 136, 0.08);
+  --fail-bg: rgba(255, 107, 107, 0.1);
+  --code-bg: #000000;
+  --code-text: #9dff9a;
+  --heading-font: "IBM Plex Mono", monospace;
+  --heading-style: normal;
+  --heading-weight: 600;
+  --body-font: "IBM Plex Mono", monospace;
+  color-scheme: dark;
+}
+
+:root[data-theme="contrast"] {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --card: #ffffff;
+  --editor-bg: #ffffff;
+  --text: #000000;
+  --muted: #333333;
+  --accent: #0033cc;
+  --on-accent: #ffffff;
+  --border: #000000;
+  --pass: #00661f;
+  --fail: #b00000;
+  --pass-bg: #e6f4ea;
+  --fail-bg: #fde8e8;
+  --code-bg: #000000;
+  --code-text: #ffffff;
+  --heading-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --heading-style: normal;
+  --heading-weight: 800;
+  color-scheme: light;
 }
 
 * { box-sizing: border-box; }
@@ -16,7 +115,7 @@ html, body {
   padding: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--body-font);
 }
 
 a { color: var(--accent); }
@@ -38,10 +137,13 @@ header .back {
 
 header .back:hover { color: var(--accent); }
 
+h1, .chapter-title, .challenge-head h3, .example h3 {
+  font-family: var(--heading-font);
+  font-style: var(--heading-style);
+  font-weight: var(--heading-weight);
+}
+
 h1 {
-  font-family: "Fraunces", serif;
-  font-style: italic;
-  font-weight: 600;
   font-size: 2rem;
   margin: 0 0 4px;
 }
@@ -71,7 +173,50 @@ header p.sub {
   font-family: "IBM Plex Mono", monospace;
   font-size: 0.78rem;
   color: var(--muted);
-  margin: 6px 0 14px;
+  margin: 6px 0 12px;
+}
+
+.theme-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.theme-picker .theme-label {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin-right: 4px;
+}
+
+.theme-picker button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.76rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 10px 5px 6px;
+  cursor: pointer;
+}
+
+.theme-picker button[aria-pressed="true"] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent) inset;
+}
+
+.theme-picker .swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid rgba(128, 128, 128, 0.5);
 }
 
 main {
@@ -136,9 +281,6 @@ section.chapter {
 }
 
 .chapter-title {
-  font-family: "Fraunces", serif;
-  font-style: italic;
-  font-weight: 600;
   margin: 0 0 6px;
   font-size: 1.7rem;
 }
@@ -161,22 +303,25 @@ section.chapter {
   border-top: 1px solid var(--border);
 }
 
-section.chapter > .section-heading:first-of-type {
-  border-top: none;
-  padding-top: 0;
-  margin-top: 0;
-}
-
 code, pre {
   font-family: "IBM Plex Mono", monospace;
 }
 
-.prompt code, p code, li code {
+:not(pre) > code {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 4px;
   padding: 1px 5px;
   font-size: 0.88em;
+}
+
+pre {
+  background: var(--code-bg);
+  color: var(--code-text);
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.5;
 }
 
 /* Theory questions */
@@ -186,11 +331,18 @@ code, pre {
   border-radius: 10px;
   padding: 16px;
   margin-bottom: 14px;
-  background: #fbf8f1;
+  background: var(--card);
 }
 
 .theory-q.answered.correct { border-color: var(--pass); }
 .theory-q.answered.incorrect { border-color: var(--fail); }
+
+.q-number {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
 
 .q-prompt {
   margin: 0 0 12px;
@@ -198,13 +350,7 @@ code, pre {
 }
 
 .q-prompt pre {
-  background: #26221a;
-  color: #f1ece0;
   padding: 10px 12px;
-  border-radius: 6px;
-  overflow-x: auto;
-  font-size: 0.82rem;
-  line-height: 1.5;
   margin: 8px 0 0;
 }
 
@@ -224,7 +370,7 @@ label.q-option {
   cursor: pointer;
 }
 
-label.q-option input { margin-top: 3px; }
+label.q-option input { margin-top: 3px; accent-color: var(--accent); }
 
 input.q-text-input {
   font-family: "IBM Plex Mono", monospace;
@@ -232,6 +378,8 @@ input.q-text-input {
   padding: 8px 10px;
   border-radius: 6px;
   border: 1px solid var(--border);
+  background: var(--editor-bg);
+  color: var(--text);
   width: 100%;
   max-width: 320px;
 }
@@ -250,8 +398,8 @@ input.q-text-input {
   line-height: 1.5;
 }
 
-.q-feedback.correct { background: rgba(63, 125, 79, 0.1); color: var(--pass); }
-.q-feedback.incorrect { background: rgba(194, 60, 42, 0.1); color: var(--fail); }
+.q-feedback.correct { background: var(--pass-bg); color: var(--pass); }
+.q-feedback.incorrect { background: var(--fail-bg); color: var(--fail); }
 .q-feedback .explain { color: var(--text); display: block; margin-top: 6px; }
 
 /* Challenges */
@@ -261,7 +409,7 @@ input.q-text-input {
   border-radius: 10px;
   padding: 18px;
   margin-bottom: 20px;
-  background: #fbf8f1;
+  background: var(--card);
 }
 
 .challenge.solved { border-color: var(--pass); }
@@ -274,9 +422,6 @@ input.q-text-input {
 }
 
 .challenge-head h3 {
-  font-family: "Fraunces", serif;
-  font-style: italic;
-  font-weight: 600;
   margin: 0;
   font-size: 1.2rem;
 }
@@ -301,6 +446,14 @@ input.q-text-input {
   line-height: 1.55;
 }
 
+.challenge .prompt ul { padding-left: 20px; margin: 8px 0; }
+
+.type-test-note {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin: -6px 0 12px;
+}
+
 .pane-label {
   font-family: "IBM Plex Mono", monospace;
   font-size: 0.75rem;
@@ -320,8 +473,9 @@ textarea.editor {
   padding: 12px;
   border-radius: 8px;
   border: 1px solid var(--border);
-  background: #fff;
+  background: var(--editor-bg);
   color: var(--text);
+  caret-color: var(--accent);
   tab-size: 2;
 }
 
@@ -353,7 +507,7 @@ button.btn {
 button.btn.primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 button.btn:active { transform: translateY(1px); }
@@ -398,14 +552,7 @@ ul.result-list li.pass { color: var(--pass); }
 ul.result-list li.fail { color: var(--fail); }
 
 .solution-block pre {
-  background: #26221a;
-  color: #f1ece0;
   padding: 14px;
-  border-radius: 8px;
-  overflow-x: auto;
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 0.82rem;
-  line-height: 1.5;
 }
 
 /* Examples */
@@ -415,13 +562,10 @@ ul.result-list li.fail { color: var(--fail); }
   border-radius: 10px;
   padding: 16px 18px;
   margin-bottom: 16px;
-  background: #fbf8f1;
+  background: var(--card);
 }
 
 .example h3 {
-  font-family: "Fraunces", serif;
-  font-style: italic;
-  font-weight: 600;
   margin: 0 0 6px;
   font-size: 1.1rem;
 }
@@ -432,13 +576,7 @@ ul.result-list li.fail { color: var(--fail); }
 }
 
 .example pre {
-  background: #26221a;
-  color: #f1ece0;
   padding: 12px 14px;
-  border-radius: 8px;
-  overflow-x: auto;
-  font-size: 0.82rem;
-  line-height: 1.5;
   margin: 0 0 10px;
 }
 
@@ -451,7 +589,12 @@ ul.result-list li.fail { color: var(--fail); }
 @media (max-width: 860px) {
   main {
     grid-template-columns: 1fr;
+    padding: 10px 16px 60px;
   }
+
+  header { padding: 20px 16px 4px; }
+
+  section.chapter { padding: 18px 14px; }
 
   nav.chapter-list {
     position: static;
@@ -466,8 +609,4 @@ ul.result-list li.fail { color: var(--fail); }
   }
 
   nav.chapter-list button .chapter-progress { float: none; margin-left: 6px; }
-
-  main { padding: 10px 16px 60px; }
-  header { padding: 20px 16px 4px; }
-  section.chapter { padding: 18px 14px; }
 }
