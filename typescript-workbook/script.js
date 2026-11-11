@@ -449,6 +449,9 @@
     ui.handleKey(e);
   });
 
+  document.getElementById("bionic-slot").outerHTML = ui.bionicButton();
+  ui.setupBionic(["#content", ".term-pop"]);
+
   window.addEventListener("hashchange", render);
   render();
 })();
