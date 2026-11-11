@@ -16,6 +16,13 @@
  */
 window.PROJECTS = [
   {
+    slug: "typescript-workbook",
+    title: "TypeScript Workbook",
+    description: "Learn TypeScript from basics to real projects — theory quizzes, live-compiled code challenges, and real-world examples.",
+    type: "tool",
+    added: "2026-11-11"
+  },
+  {
     slug: "file-upload",
     title: "CV Screener",
     description: "Upload a CV and Claude screens it like a recruiter — role fit and what's missing for each.",
