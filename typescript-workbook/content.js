@@ -2074,72 +2074,6 @@
     }
   ];
 
-  var NOTES = {
-    basics: [
-      { title: "TypeScript is JavaScript plus types", text: "Types are checked when you compile, then erased. What actually runs is plain JavaScript, so types never slow your code down or change what it does." },
-      { title: "Inference", text: "You don't have to annotate everything. TypeScript infers types from initial values: `let` widens to the general type, `const` keeps the exact literal.", code: 'let a = "hi";   // string\nconst b = "hi"; // "hi"' },
-      { title: "any, unknown, never", text: "`any` switches checking off for a value. `unknown` means 'could be anything, check before you use it'. `never` means 'this can't happen'." },
-      { title: "Arrays and tuples", text: "Arrays can be any length. Tuples fix the length and the type at each position.", code: "const ids: number[] = [1, 2, 3];\nconst point: [number, number] = [3, 4];" }
-    ],
-    functions: [
-      { title: "Annotate what comes in", text: "Parameters need types (TypeScript can't guess them). Return types are inferred, but writing them makes the function's contract explicit.", code: "function total(price: number, qty: number): number {\n  return price * qty;\n}" },
-      { title: "Optional and default parameters", text: "`?` lets callers leave an argument out, and its type becomes `T | undefined`. A default value makes it optional too, and keeps it defined.", code: 'function greet(name?: string) {}\nfunction welcome(name = "friend") {}' },
-      { title: "Function types", text: "Describe a function's shape with an arrow-style type, handy for callbacks.", code: "type Handler = (event: string) => void;\nfunction on(name: string, handler: Handler) {}" },
-      { title: "void vs never", text: "`void` means 'returns, but don't use the result'. `never` means the function can't finish normally, e.g. it always throws." }
-    ],
-    objects: [
-      { title: "Interfaces describe shape", text: "An interface lists the properties an object must have, and their types. It disappears completely at compile time.", code: "interface User {\n  id: number;\n  name: string;\n}" },
-      { title: "Optional and readonly", text: "`?` means the key can be missing. `readonly` means it can't be reassigned after creation.", code: "interface Config {\n  readonly apiUrl: string;\n  retries?: number;\n}" },
-      { title: "Dictionaries", text: "When you don't know the keys in advance, use an index signature or `Record`.", code: "interface Scores { [name: string]: number }\ntype Scores2 = Record<string, number>;" },
-      { title: "Structural typing", text: "Matching shape is enough: any object with the right properties satisfies the type, whatever it's called. Fresh object literals also get an 'excess property' check to catch typos." }
-    ],
-    classes: [
-      { title: "Access modifiers", text: "`public` (default) is visible everywhere, `protected` to the class and subclasses, `private` only inside the class. All checked at compile time only." },
-      { title: "Parameter properties", text: "A modifier on a constructor parameter declares and assigns the property in one go.", code: "class OrderService {\n  constructor(private db: Database) {}\n}" },
-      { title: "implements is a contract", text: "`class A implements B` makes TypeScript check that A has everything B requires. It doesn't copy any code into A." },
-      { title: "abstract, static, readonly", text: "Abstract classes can't be created directly and can require methods. Static members live on the class. Readonly properties are set once.", code: "abstract class Shape {\n  static count = 0;\n  readonly id = ++Shape.count;\n  abstract area(): number;\n}" }
-    ],
-    generics: [
-      { title: "Type parameters", text: "A generic is a type-level parameter, usually inferred from the arguments you pass.", code: "function identity<T>(value: T): T {\n  return value;\n}\nidentity(5); // T is number" },
-      { title: "Constraints", text: "`extends` limits what T can be without fixing it to one exact type.", code: "function byId<T extends { id: number }>(items: T[], id: number) {\n  return items.find((i) => i.id === id);\n}" },
-      { title: "keyof and indexed access", text: "`keyof T` is the union of T's keys, and `T[K]` is the type at key K. Together they type property lookups exactly.", code: "function get<T, K extends keyof T>(obj: T, key: K): T[K] {\n  return obj[key];\n}" },
-      { title: "Generics you already use", text: "`Array<T>` (written `T[]`), `Promise<T>`, `Record<K, V>`, `Map<K, V>` are all generic types." }
-    ],
-    unions: [
-      { title: "Unions and narrowing", text: "`A | B` means either. Before using union-specific methods, narrow with `typeof`, `instanceof`, `in`, or equality checks.", code: 'function fmt(id: string | number) {\n  return typeof id === "number" ? `#${id}` : id;\n}' },
-      { title: "Discriminated unions", text: "Give each variant a shared literal tag, then switch on it. TypeScript narrows the rest of the shape for you.", code: 'type Result =\n  | { ok: true; value: number }\n  | { ok: false; error: string };' },
-      { title: "Type guards", text: "A function returning `x is T` teaches TypeScript how to narrow wherever it's called.", code: 'function isString(x: unknown): x is string {\n  return typeof x === "string";\n}' },
-      { title: "Exhaustiveness", text: "Assign the value to `never` in `default`. If a new variant is added and not handled, that line becomes a compile error.", code: "default: {\n  const unhandled: never = shape;\n  return unhandled;\n}" }
-    ],
-    utility: [
-      { title: "Reshaping objects", text: "`Partial<T>` makes everything optional, `Required<T>` the opposite, `Readonly<T>` locks everything." },
-      { title: "Picking and dropping keys", text: "`Pick<T, K>` keeps only keys K. `Omit<T, K>` keeps everything else. `Record<K, V>` builds a dictionary type.", code: 'type Preview = Pick<User, "id" | "name">;\ntype NewUser = Omit<User, "id">;' },
-      { title: "Types from values", text: "`typeof` in a type position reuses a value's type; `ReturnType` grabs a function's output type.", code: "const defaults = { port: 3000, debug: false };\ntype Config = typeof defaults;" },
-      { title: "Mapped and conditional types", text: "Mapped types loop over keys; conditional types branch like a ternary.", code: "type Nullable<T> = { [K in keyof T]: T[K] | null };\ntype IsString<T> = T extends string ? true : false;" }
-    ],
-    "real-world": [
-      { title: "tsconfig essentials", text: "`strict` turns on the safety net, `target` sets which JavaScript syntax is emitted, `module` sets the import/export style, `outDir` sets where output goes." },
-      { title: "Validate outside data", text: "Treat API responses and parsed JSON as `unknown`, then check them with a type guard before trusting them." },
-      { title: "as vs satisfies", text: "`as` overrules the compiler with no checks. `satisfies` checks the value against a type but keeps the more precise inferred type.", code: "const config = { port: 3000 } satisfies Config;" },
-      { title: "Declaration files", text: "`.d.ts` files describe JavaScript that has no types. `@types/*` packages are exactly this.", code: 'declare module "legacy-lib" {\n  export function add(a: number, b: number): number;\n}' }
-    ],
-    "lab-1": [
-      { title: "What tsc does", text: "`tsc` type-checks your whole project, then writes one `.js` file per `.ts` file. Interfaces, type aliases and annotations are erased in the output." },
-      { title: "Where output goes", text: "Without `outDir`, `.js` files are written next to your sources. `outDir` sends them elsewhere, and `rootDir` controls which folder structure gets mirrored.", code: '"outDir": "dist",\n"rootDir": "src"' },
-      { title: "Strict mode", text: "`\"strict\": true` turns on `noImplicitAny`, `strictNullChecks` and more. Turning it on in an existing project usually reveals a few real bugs." }
-    ],
-    "lab-2": [
-      { title: "module", text: "Controls the import/export syntax tsc emits. `CommonJS` emits `require` and `exports`. `ESNext` and `NodeNext` keep `import` and `export`. It has to match how your runtime loads files; for Node, that's the `\"type\"` field in package.json." },
-      { title: "target", text: "Controls which JavaScript version tsc writes. Newer syntax than the target gets rewritten into older equivalents, e.g. `??` becomes a ternary for ES2017." },
-      { title: "noUncheckedIndexedAccess", text: "Makes `arr[i]` and `obj[key]` include `| undefined`, so out-of-bounds lookups have to be handled.", code: "const first = names[0]; // string | undefined" }
-    ],
-    "lab-3": [
-      { title: "Declaring a module", text: "When a package ships no types, a `declare module` block in any `.d.ts` file in your project describes it.", code: 'declare module "tiny-slug" {\n  export function slugify(input: string): string;\n}' },
-      { title: "Which imports survive", text: "`import type` is always erased. By default tsc also drops imports that are only used as types or never used. `verbatimModuleSyntax` makes this explicit: only `type` imports are removed." },
-      { title: "Path aliases", text: "`paths` maps import prefixes to folders for the type checker. Your bundler or runtime needs the same alias, because tsc doesn't rewrite the import.", code: '"paths": {\n  "@/*": ["./src/*"]\n}' }
-    ]
-  };
-
   var LABS = [
     {
       id: "lab-1",
@@ -2567,15 +2501,18 @@
     }
   ];
 
+  // Reference guides live in lessons.js (loaded before this file).
+  var GUIDES = window.TSW_LESSONS || {};
+
   var LEVELS = [];
   CHAPTERS.forEach(function (chapter) {
-    LEVELS.push({ id: chapter.id, kind: "chapter", title: chapter.title, chapter: chapter, notes: NOTES[chapter.id] || [] });
+    LEVELS.push({ id: chapter.id, kind: "chapter", title: chapter.title, chapter: chapter, guide: GUIDES[chapter.id] || null });
     LABS.forEach(function (lab) {
       if (lab.after === chapter.id) {
-        LEVELS.push({ id: lab.id, kind: "lab", title: lab.title, lab: lab, notes: NOTES[lab.id] || [] });
+        LEVELS.push({ id: lab.id, kind: "lab", title: lab.title, lab: lab, guide: GUIDES[lab.id] || null });
       }
     });
   });
 
-  window.TSW_CONTENT = { chapters: CHAPTERS, labs: LABS, notes: NOTES, levels: LEVELS };
+  window.TSW_CONTENT = { chapters: CHAPTERS, labs: LABS, levels: LEVELS };
 })();

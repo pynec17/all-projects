@@ -189,7 +189,7 @@ pre code { font-family: inherit; }
 
 /* Challenges */
 
-.challenge, .example, .note-item {
+.challenge, .example {
   background: var(--surface);
   border: var(--card-border);
   border-radius: var(--radius);
@@ -306,15 +306,148 @@ pre code { font-family: inherit; }
 .example .takeaway { margin: 0; line-height: 1.6; font-size: 15px; }
 .example .takeaway strong { font-weight: 500; }
 
-.note-item h4 {
-  font-family: var(--font-display);
-  font-weight: var(--display-weight);
-  font-size: 17px;
-  margin: 0 0 6px;
+/* Reference guide */
+
+.btn.small { font-size: 13px; padding: 6px 12px; }
+
+.guide { line-height: 1.6; }
+
+.guide-meta {
+  display: flex;
+  gap: 14px;
+  font-family: var(--font-mono-ui);
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 6px;
 }
 
-.note-item p { margin: 0; line-height: 1.6; }
-.note-item pre { margin-top: 10px; }
+.guide-summary { font-size: 16px; margin: 0 0 18px; }
+
+.guide-glance,
+.guide-section {
+  background: var(--surface);
+  border: var(--card-border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 14px;
+}
+
+.guide h3 {
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  font-size: 18px;
+  margin: 0 0 8px;
+}
+
+.guide-glance table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.guide-glance td { padding: 6px 0; border-top: 1px solid var(--border); vertical-align: top; }
+.guide-glance tr:first-child td { border-top: none; }
+.guide-glance td:first-child { width: 46%; padding-right: 14px; }
+.guide-glance td:first-child code { white-space: pre-wrap; word-break: break-word; }
+.guide-glance td:last-child { color: var(--muted); }
+
+.guide-jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 14px;
+}
+
+.guide-jump button {
+  font: inherit;
+  font-size: 13px;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 20px;
+  padding: 4px 11px;
+  cursor: pointer;
+}
+
+.guide-jump button:hover { color: var(--text); border-color: var(--accent); }
+
+.guide-section { scroll-margin-top: 80px; }
+.guide-section p { margin: 0 0 10px; }
+.guide-section > :last-child { margin-bottom: 0; }
+
+.guide-list { margin: 0 0 10px; padding-left: 20px; }
+.guide-list li { margin-bottom: 4px; }
+
+.guide-code { margin: 0 0 12px; }
+.guide-code .guide-editor { min-height: 0; resize: none; overflow: auto hidden; }
+.guide-code [hidden] { display: none; }
+.guide-code-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+.guide-caption { font-size: 13.5px; color: var(--muted); margin: 6px 0 0 !important; }
+
+.guide-out, .guide-js { margin-top: 10px; }
+
+.guide-out-label {
+  font-family: var(--font-mono-ui);
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.guide-out-label.good { color: var(--good); }
+.guide-out-label.bad { color: var(--bad); }
+.guide-out-lines.bad { background: var(--bad-bg); color: var(--bad); border-color: transparent; }
+
+.guide-callout {
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 9px 13px;
+  margin: 0 0 10px;
+  font-size: 14.5px;
+}
+
+.guide-callout.warn { border-left-color: var(--bad); background: var(--bad-bg); }
+.guide-callout.real { border-left-color: var(--good); background: var(--good-bg); }
+
+.guide-callout-label {
+  display: block;
+  font-family: var(--font-mono-ui);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+.gotcha-list { list-style: none; margin: 0; padding: 0; }
+.gotcha-list li { padding: 10px 0; border-top: 1px solid var(--border); }
+.gotcha-list li:first-child { border-top: none; padding-top: 0; }
+.gotcha-list li:last-child { padding-bottom: 0; }
+.gotcha-list p { margin: 0; }
+
+.gotcha-pair {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.gotcha-code { position: relative; min-width: 0; }
+.gotcha-code pre { padding-left: 30px; height: 100%; color: var(--text); }
+.gotcha-code.bad pre { background: var(--bad-bg); border-color: transparent; }
+.gotcha-code.good pre { background: var(--good-bg); border-color: transparent; }
+
+.gotcha-mark {
+  position: absolute;
+  left: 11px;
+  top: 11px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.gotcha-code.bad .gotcha-mark { color: var(--bad); }
+.gotcha-code.good .gotcha-mark { color: var(--good); }
+
+@media (max-width: 860px) {
+  .guide-glance, .guide-section { padding: 14px 14px; }
+  .guide-glance td:first-child { width: 50%; }
+}
 
 /* Project Lab (always dark) */
 

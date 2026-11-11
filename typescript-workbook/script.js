@@ -29,17 +29,19 @@
     return level.kind === "lab" ? "Lab " + labNumber(level) : String(chapterNumber(level)).padStart(2, "0");
   }
 
+  var GUIDE = { id: "guide", index: 0, label: "Guide", short: "Guide" };
+
   function sectionsFor(level) {
     if (level.kind === "lab") {
-      return level.lab.tasks.map(function (t, i) {
+      return [GUIDE].concat(level.lab.tasks.map(function (t, i) {
         return { id: "tasks", index: i, label: t.title, short: "Task " + (i + 1), done: ui.isDone("lab", t.id) };
-      }).concat([{ id: "notes", index: 0, label: "Notes", short: "Notes" }]);
+      }));
     }
     return [
+      GUIDE,
       { id: "theory", index: 0, label: "Theory", short: "Theory", count: ui.sectionCounts(level, "theory") },
       { id: "challenges", index: 0, label: "Code challenges", short: "Challenges", count: ui.sectionCounts(level, "challenges") },
-      { id: "examples", index: 0, label: "Real-world examples", short: "Examples" },
-      { id: "notes", index: 0, label: "Notes", short: "Notes" }
+      { id: "examples", index: 0, label: "Real-world examples", short: "Examples" }
     ];
   }
 
@@ -51,7 +53,7 @@
     var parts = location.hash.replace(/^#\/?/, "").split("/");
     var level = ui.levels[ui.levelIndex(parts[0])];
     if (!level) level = ui.levels[ui.levelIndex(ui.get("last"))] || ui.firstUnfinished();
-    var valid = level.kind === "lab" ? ["tasks", "notes"] : ["theory", "challenges", "examples", "notes"];
+    var valid = level.kind === "lab" ? ["guide", "tasks"] : ["guide", "theory", "challenges", "examples"];
     var section = valid.indexOf(parts[1]) === -1 ? valid[0] : parts[1];
     var index = Math.max(0, parseInt(parts[2], 10) || 0);
     if (section === "tasks") index = Math.min(index, level.lab.tasks.length - 1);
@@ -219,10 +221,10 @@
       body.appendChild(el("p", "section-intro", "Patterns you'll meet in real codebases, and why they're typed the way they are."));
       level.chapter.examples.forEach(function (ex) { body.appendChild(ui.renderExample(ex)); });
       scrollToNth(".example", route.index);
-    } else if (route.section === "notes") {
-      body.appendChild(el("p", "section-intro", "A quick reference for this " + (level.kind === "lab" ? "lab" : "chapter") + "."));
-      body.appendChild(ui.renderNotes(level.notes));
-      scrollToNth(".note-item", route.index);
+    } else if (route.section === "guide") {
+      var guide = ui.renderGuide(level);
+      body.appendChild(guide);
+      if (route.index) guide.scrollToSection(route.index - 1);
     } else if (route.section === "tasks") {
       body.appendChild(ui.renderLabTask(level.lab.tasks[route.index]));
     }
