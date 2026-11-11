@@ -64,6 +64,7 @@
 
   function parseHash() {
     var parts = location.hash.replace(/^#\/?/, "").split("/");
+    if (parts[0] === "glossary") return { glossary: true, term: parts[1] || "" };
     var level = ui.levels[ui.levelIndex(parts[0])];
     if (!level) return { home: true };
     if (parts[1] === "theory") parts[1] = "quiz";   // old links
@@ -121,7 +122,25 @@
     route = parseHash();
     closeDrawer();
     window.scrollTo(0, 0);
-    if (route.home) renderHome(); else renderLevel();
+    if (route.home) renderHome();
+    else if (route.glossary) renderGlossaryPage();
+    else renderLevel();
+  }
+
+  function renderGlossaryPage() {
+    document.body.className = "glossary-view";
+    app.innerHTML =
+      '<header class="level-bar">' +
+      '<a class="map-link" href="#">◀ Map</a>' +
+      '<span class="level-name">Glossary</span>' +
+      '<div class="stats" data-stats></div>' +
+      "</header>" +
+      '<main class="level-main">' +
+      '<div class="level-intro"><h1>Glossary</h1><p class="blurb">Every key term in one place. Underlined terms in guides and examples show these definitions when you hover over them or tap them.</p></div>' +
+      '<div id="glossary"></div>' +
+      "</main>";
+    renderStats();
+    document.getElementById("glossary").appendChild(ui.renderGlossary(route.term));
   }
 
   function renderHome() {
@@ -139,6 +158,7 @@
       '<a class="back" href="../">&#9664; INDEX</a>' +
       '<div class="title-row"><h1>TypeScript Quest</h1><div class="stats" data-stats></div></div>' +
       '<p class="tagline">Learn TypeScript one level at a time. Get halfway through a level to unlock the next one, and earn XP for everything you solve.</p>' +
+      '<a class="glossary-link" href="#glossary">Glossary · ' + ui.glossaryCount + " terms →</a>" +
       '<div class="goal-row"><div class="goal">' + squares + '</div><span>' +
       (today >= goal ? "Daily goal done" : today + " / " + goal + " today") + '</span><span class="overall">' + Math.round((t.done / t.total) * 100) + "% complete</span></div>" +
       "</header>" +
@@ -252,6 +272,8 @@
     drawerTitle.textContent = "Handbook · " + level.title;
     drawerBody.innerHTML = "";
     drawerBody.appendChild(ui.renderGuide(level, { compact: true }));
+    drawerBody.appendChild(el("a", "drawer-glossary", "Open the full glossary →"));
+    drawerBody.lastChild.href = "#glossary";
     drawer.hidden = false;
     scrim.hidden = false;
     document.body.classList.add("drawer-open");

@@ -111,6 +111,29 @@ h1 {
   margin: 10px 0 14px;
 }
 
+.glossary-link {
+  display: inline-block;
+  font-family: var(--font-mono-ui);
+  font-size: 13px;
+  text-decoration: none;
+  border: 1.5px solid var(--ink);
+  border-radius: 10px;
+  padding: 5px 11px;
+  background: var(--surface);
+  margin: 0 0 16px;
+}
+
+.glossary-link:hover { background: var(--reward); }
+
+.drawer-glossary {
+  display: block;
+  font-family: var(--font-mono-ui);
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+.gloss-entry { box-shadow: 3px 3px 0 var(--ink); }
+
 .goal-row {
   display: flex;
   align-items: center;

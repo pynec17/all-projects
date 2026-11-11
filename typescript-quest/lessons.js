@@ -36,13 +36,14 @@
   // 1. The Basics
   // ------------------------------------------------------------------
   G.basics = {
-    minutes: 5,
+    minutes: 6,
     summary: "TypeScript is JavaScript plus a type checker. It catches mistakes like typos and wrong argument types as you write, before the code runs. Then the types are erased.",
     glance: [
       ["let x: string", "annotation: x holds a string"],
       ["let x = 5", "inference: x is number, no annotation needed"],
       ["number[]  /  Array<number>", "array of numbers"],
       ["[string, number]", "tuple: fixed length, a type per position"],
+      ["string | number", "union: either a string or a number"],
       ['"sm" | "md" | "lg"', "literal union: one of these exact values"],
       ["type Size = …", "type alias: a reusable name for a type"],
       ["unknown", "anything, but must be checked before use"],
@@ -115,9 +116,27 @@
         ]
       },
       {
+        title: "Union types: this or that",
+        blocks: [
+          "`|` combines types into a **union**: a value that can be any one of them. Read `|` as \"or\".",
+          {
+            code: c(`
+              let id: string | number = 42;
+              id = "A-42";     // fine: strings are allowed too
+              // id = true;    // error: boolean isn't in the union
+
+              let nickname: string | undefined;   // a string, or not set yet
+              console.log(id, nickname);
+            `),
+            run: true
+          },
+          "`T | undefined` is how TypeScript says \"might be missing\". You'll see it constantly, and you have to check for `undefined` before using the value. Chapter 4 covers working with unions in depth."
+        ]
+      },
+      {
         title: "Literal types and const",
         blocks: [
-          "A literal type is one exact value. Unions of them make a fixed set of options. `const` infers the literal; `let` widens to the general type.",
+          "A literal type is one exact value. A union of literals makes a fixed set of options. `const` infers the literal; `let` widens to the general type.",
           {
             code: c(`
               type Size = "small" | "medium" | "large";
@@ -138,7 +157,7 @@
           {
             list: [
               "`any`: turns checking off, and spreads to everything it touches. Last resort.",
-              "`unknown`: accepts anything, but you must narrow (e.g. `typeof`) before using it. The safe choice.",
+              "`unknown`: accepts anything, but you must check what it is before using it. The safe choice.",
               "`never`: no values. Return type of functions that always throw."
             ]
           },
@@ -152,7 +171,21 @@
               console.log(shout("hi"), shout(42));
             `),
             run: true
-          }
+          },
+          "Inside `if (typeof value === \"string\")`, TypeScript knows `value` is a string. Checking a value to pin down its type like this is called **narrowing**; chapter 4 covers it in depth."
+        ]
+      },
+      {
+        title: "Strict mode",
+        blocks: [
+          "Projects switch on `\"strict\": true` in their TypeScript config (`tsconfig.json`). It turns on the checks that make TypeScript worth using, such as:",
+          {
+            list: [
+              "no value can silently end up as `any`",
+              "`null` and `undefined` must be handled before a value is used"
+            ]
+          },
+          "Every example, quiz and challenge here assumes strict mode. Lab 1 shows how to turn it on in a real project."
         ]
       }
     ],
@@ -1040,7 +1073,7 @@
       {
         title: "What's erased",
         blocks: [
-          "Interfaces, type aliases, annotations, `<T>`, `as` and modifiers like `private` all disappear. Only `enum`, parameter properties and decorators generate code.",
+          "Interfaces, type aliases and annotations all disappear, and so does every other type-only feature you'll meet later. Only a handful of features generate code, such as `enum`.",
           {
             code: c(`
               interface User { id: number; email: string }
