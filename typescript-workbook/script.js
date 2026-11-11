@@ -49,11 +49,35 @@
     return "#" + level.id + "/" + section + (index ? "/" + index : "");
   }
 
+  // Where "Continue" should take you inside a level: its guide if you haven't
+  // started it, otherwise the first unanswered question, challenge or task.
+  function resumeHash(level) {
+    if (ui.levelCounts(level).done === 0) return hashFor(level, "guide", 0);
+    if (level.kind === "lab") {
+      var t = level.lab.tasks.findIndex(function (task) { return !ui.isDone("lab", task.id); });
+      return hashFor(level, "tasks", Math.max(0, t));
+    }
+    var q = level.chapter.theory.findIndex(function (item) { return !ui.isDone("theory", item.id); });
+    if (q !== -1) return hashFor(level, "quiz", q);
+    return hashFor(level, "challenges", 0);
+  }
+
+  // The level to continue: the last one you visited, unless it's finished.
+  function resumeLevel() {
+    var last = ui.levels[ui.levelIndex(ui.get("last"))];
+    if (last) {
+      var c = ui.levelCounts(last);
+      if (c.done < c.total) return last;
+    }
+    return ui.firstUnfinished();
+  }
+
   function parseHash() {
     var parts = location.hash.replace(/^#\/?/, "").split("/");
+    if (!parts[0] || parts[0] === "home") return { home: true };
     if (parts[0] === "glossary") return { glossary: true, term: parts[1] || "" };
     var level = ui.levels[ui.levelIndex(parts[0])];
-    if (!level) level = ui.levels[ui.levelIndex(ui.get("last"))] || ui.firstUnfinished();
+    if (!level) return { home: true };
     if (parts[1] === "theory") parts[1] = "quiz";   // old links
     var valid = level.kind === "lab" ? ["guide", "tasks"] : ["guide", "examples", "quiz", "challenges"];
     var section = valid.indexOf(parts[1]) === -1 ? valid[0] : parts[1];
@@ -115,6 +139,16 @@
 
   function renderToc() {
     tocEl.innerHTML = "";
+    var home = el("a", "toc-level toc-home" + (route.home ? " active" : ""));
+    home.href = "#";
+    home.innerHTML =
+      '<span class="toc-mark" aria-hidden="true">⌂</span>' +
+      '<span class="toc-num"></span>' +
+      '<span class="toc-title">Start here</span>' +
+      '<span class="toc-count"></span>';
+    if (route.home) home.setAttribute("aria-current", "true");
+    tocEl.appendChild(home);
+
     ui.levels.forEach(function (level) {
       var c = ui.levelCounts(level);
       var state = c.done === c.total ? "done" : (c.done > 0 ? "partial" : "");
@@ -206,10 +240,98 @@
     if (target) setTimeout(function () { target.scrollIntoView({ block: "start" }); window.scrollBy(0, -70); }, 0);
   }
 
+  function longName(level) {
+    return (level.kind === "lab" ? "Lab " + labNumber(level) : "Chapter " + chapterNumber(level)) + " · " + level.title;
+  }
+
+  function renderHome() {
+    var t = ui.totals();
+    var allDone = t.done === t.total;
+    // "Started" means you've answered something or at least opened a chapter before.
+    var started = t.done > 0 || ui.levelIndex(ui.get("last")) !== -1;
+    var resume = started ? resumeLevel() : ui.levels[0];
+    var rc = ui.levelCounts(resume);
+
+    // Which chapter number each lab comes after, for the "Project Labs" note.
+    var labAfter = ui.levels.filter(function (l) { return l.kind === "lab"; }).map(function (lab) {
+      var prev = ui.levels[ui.levelIndex(lab.id) - 1];
+      return chapterNumber(prev);
+    });
+
+    var steps = [
+      ["Guide", "Read the explanation: the key syntax at a glance, then each idea with examples you can edit and run. Hover over or tap underlined terms for a quick definition."],
+      ["Examples", "Short, simple examples first, then patterns you'll meet in real codebases."],
+      ["Quiz", "One question at a time, to check the ideas have stuck. +10 XP each."],
+      ["Challenges", "Write real TypeScript in the browser. It's type-checked by the actual compiler, then tested. +20 to 50 XP."]
+    ];
+
+    var wrap = el("div", "home");
+    wrap.innerHTML =
+      '<div class="crumb">TypeScript Workbook</div>' +
+      "<h1>Learn TypeScript, building on the JavaScript you know</h1>" +
+      '<p class="home-lede">This workbook teaches TypeScript from the beginning, for people who already write JavaScript. Each chapter explains one part of the language, shows it in action, then checks you\'ve got it with a quiz and code challenges, compiled by the real TypeScript compiler right here in the browser.</p>' +
+
+      '<div class="home-continue">' +
+      '<div class="home-continue-text">' +
+      '<span class="k">' + (allDone ? "Everything's complete" : (started ? "Continue where you left off" : "Start here")) + "</span>" +
+      "<strong>" + esc(longName(resume)) + "</strong>" +
+      '<span class="home-continue-meta">' + (started ? rc.done + " of " + rc.total + " done" : "Begins with the guide: what TypeScript adds to JavaScript") + "</span>" +
+      "</div>" +
+      '<a class="btn primary home-go" href="' + resumeHash(resume) + '">' + (allDone ? "Review it →" : (started ? "Continue →" : "Start chapter 1 →")) + "</a>" +
+      "</div>" +
+
+      (t.done
+        ? '<div class="home-progress"><div class="bar"><span style="width:' + Math.round((t.done / t.total) * 100) + '%"></span></div>' +
+          "<span>" + t.done + " of " + t.total + " questions, challenges and lab tasks done · " + ui.xp() + " XP</span></div>"
+        : "") +
+
+      '<h2 class="home-h2">How each chapter works</h2>' +
+      '<ol class="home-steps">' +
+      steps.map(function (s, i) {
+        return '<li><span class="home-step-num">' + (i + 1) + "</span><div><strong>" + s[0] + "</strong><p>" + s[1] + "</p></div></li>";
+      }).join("") +
+      "</ol>" +
+      '<p class="home-note"><span class="home-lab-tag">Lab</span> After chapters ' + labAfter.slice(0, -1).join(", ") + " and " + labAfter[labAfter.length - 1] +
+      ", a <strong>Project Lab</strong> gives you a small multi-file project in an editor: change the tsconfig, fix what the compiler finds, and see exactly what it emits.</p>" +
+
+      '<h2 class="home-h2">Contents</h2>' +
+      '<div class="home-contents" id="home-contents"></div>' +
+
+      '<h2 class="home-h2">Also here</h2>' +
+      '<div class="home-extras">' +
+      '<a class="home-extra" href="#glossary"><strong>Glossary</strong><span>' + ui.glossaryCount + " key terms with short definitions, from <code>any</code> to <code>unknown</code>.</span></a>" +
+      '<button type="button" class="home-extra" id="home-search"><strong>Search</strong><span>Press <span class="kbd">/</span> to search guides, terms and questions.</span></button>' +
+      '<div class="home-extra"><strong>Progress</strong><span>Saved in this browser. Answer something each day to build a streak.</span></div>' +
+      "</div>";
+    contentEl.appendChild(wrap);
+
+    var list = document.getElementById("home-contents");
+    ui.levels.forEach(function (level) {
+      var c = ui.levelCounts(level);
+      var state = c.done === c.total ? "done" : (c.done > 0 ? "partial" : "");
+      var row = el("a", "home-row kind-" + level.kind + (state ? " " + state : "") + (level === resume && !allDone ? " current" : ""));
+      row.href = c.done ? resumeHash(level) : hashFor(level, "guide", 0);
+      row.innerHTML =
+        '<span class="home-row-mark" aria-hidden="true">' + (state === "done" ? "✓" : (state === "partial" ? "◐" : "○")) + "</span>" +
+        '<span class="home-row-num">' + levelLabel(level) + "</span>" +
+        '<span class="home-row-body"><span class="home-row-title">' + esc(level.title) + "</span>" +
+        '<span class="home-row-blurb">' + md(level.kind === "lab" ? level.lab.blurb : level.chapter.blurb) + "</span></span>" +
+        '<span class="home-row-count">' + c.done + "/" + c.total + "</span>";
+      list.appendChild(row);
+    });
+
+    document.getElementById("home-search").addEventListener("click", function () { searchEl.focus(); });
+  }
+
   function renderContent() {
     var level = route.level;
     contentEl.innerHTML = "";
     window.scrollTo(0, 0);
+
+    if (route.home) {
+      renderHome();
+      return;
+    }
 
     if (route.glossary) {
       contentEl.appendChild(el("div", "level-head",
