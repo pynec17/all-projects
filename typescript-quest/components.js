@@ -737,7 +737,8 @@
         var meta = g.level
           ? 'Covered in <a href="#' + g.level + '/guide">' + esc(levelName(g.level)) + "</a>" +
             (g.more ? ' and <a href="#' + g.more + '/guide">' + esc(levelName(g.more)) + "</a>" : "")
-          : "Plain JavaScript syntax";
+          : "Plain JavaScript syntax" +
+            (g.more ? ' · used in <a href="#' + g.more + '/guide">' + esc(levelName(g.more)) + "</a>" : "");
         item.innerHTML = "<h3>" + esc(g.term) + "</h3><p>" + md(g.def) + '</p><div class="gloss-meta">' + meta + "</div>";
         item.setAttribute("data-search", (g.term + " " + plain(g.def)).toLowerCase());
         list.appendChild(item);
