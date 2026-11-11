@@ -4,27 +4,33 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TypeScript Workbook</title>
-<script>try { var t = localStorage.getItem("ts-workbook:theme"); if (t) document.documentElement.setAttribute("data-theme", t); } catch (e) {}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;1,500;1,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="components.css">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header>
+<header class="topbar">
   <a class="back" href="../">&#9664; INDEX</a>
-  <h1>TypeScript Workbook</h1>
-  <p class="sub">Eight chapters, theory questions, and live-graded code challenges that run the real TypeScript compiler in your browser &mdash; plus real-world examples. No setup.</p>
-  <div class="progress-bar"><div class="progress-fill" id="overall-progress-fill"></div></div>
-  <p class="progress-label" id="overall-progress-label"></p>
-  <div class="theme-picker" id="theme-picker" role="group" aria-label="Theme"></div>
+  <span class="brand"><span class="brand-mark">TS</span><span class="brand-text">Workbook</span></span>
+  <div class="search">
+    <input id="search" type="search" placeholder="Search questions, notes, labs" aria-label="Search the workbook" autocomplete="off">
+    <div class="search-results" id="search-results" hidden></div>
+  </div>
+  <span class="xp-pill" id="xp-pill"></span>
+  <button type="button" class="contents-btn" id="contents-btn" aria-expanded="false" aria-controls="toc">Contents</button>
 </header>
 
-<main>
-  <nav class="chapter-list" id="chapter-list"></nav>
-  <section class="chapter" id="chapter-view"></section>
-</main>
+<div class="shell">
+  <nav class="toc" id="toc" aria-label="Contents"></nav>
+  <main class="content" id="content"></main>
+  <aside class="rail" id="rail" aria-label="Your progress"></aside>
+</div>
 
+<script src="content.js"></script>
+<script src="engine.js"></script>
+<script src="components.js"></script>
 <script src="script.js"></script>
 </body>
 </html>

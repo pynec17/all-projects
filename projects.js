@@ -18,7 +18,7 @@ window.PROJECTS = [
   {
     slug: "typescript-workbook",
     title: "TypeScript Workbook",
-    description: "Learn TypeScript from basics to real projects — theory quizzes, live-compiled code challenges, and real-world examples.",
+    description: "A searchable TypeScript handbook — one-question-at-a-time quizzes, live-compiled challenges, and a Project Lab for tsconfig and compiler tasks.",
     type: "tool",
     added: "2026-11-11"
   },
