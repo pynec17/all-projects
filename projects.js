@@ -16,6 +16,13 @@
  */
 window.PROJECTS = [
   {
+    slug: "typescript-quest",
+    title: "TypeScript Quest",
+    description: "Learn TypeScript level by level — unlockable chapters, XP and streaks, quick quiz cards, and editor-style Project Labs.",
+    type: "game",
+    added: "2026-11-11"
+  },
+  {
     slug: "typescript-workbook",
     title: "TypeScript Workbook",
     description: "A searchable TypeScript handbook — one-question-at-a-time quizzes, live-compiled challenges, and a Project Lab for tsconfig and compiler tasks.",
