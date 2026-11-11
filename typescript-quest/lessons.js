@@ -77,8 +77,24 @@
             list: [
               "Types cost nothing at runtime. They don't slow anything down or change what the code does.",
               "Types can't check data that arrives while the program runs, like an API response or user input. Chapter 8 covers how to handle that.",
-              "You can't test a type in an `if` at runtime. You check values with ordinary JavaScript: `typeof`, `Array.isArray`, `instanceof`."
+              "You can't ask \"is this a `User`?\" while the program runs, because the `User` type no longer exists by then. Instead you check the value itself with ordinary JavaScript, and TypeScript understands those checks:"
             ]
+          },
+          {
+            code: c(`
+              type User = { email: string };
+
+              function describe(x: User | string) {
+                // if (x is User) { ... }        // not possible: types are gone at runtime
+                if (typeof x === "string") {     // check the value instead
+                  return "a string: " + x;
+                }
+                return "a user: " + x.email;     // TypeScript knows x is a User here
+              }
+
+              console.log(describe("hi"), describe({ email: "ada@x.com" }));
+            `),
+            run: true
           }
         ]
       },
@@ -279,7 +295,7 @@
     ],
     gotchas: [
       { text: "Capitalised types are wrapper objects.", bad: 'let t: String = "Hi";', good: 'let t: string = "Hi";' },
-      { text: "Types don't exist at runtime. Check values with `typeof`, `Array.isArray` or `instanceof`, never with a type name." },
+      { text: "Types don't exist when the code runs, so you can't check against a type name like `User`. Check the value instead, with `typeof`, `Array.isArray` or `instanceof`." },
       { text: "An empty array gives inference nothing to go on.", bad: "const ids = [];", good: "const ids: number[] = [];" },
       { text: "`let total: number = 0` is noise. `let total = 0` already infers `number`." }
     ]

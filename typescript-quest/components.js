@@ -481,7 +481,7 @@
       // Simple examples are self-contained, so they get Try it / Show JavaScript.
       wrap.appendChild(example.simple
         ? renderGuideCode({ code: example.code, run: true })
-        : el("pre", "", "<code>" + esc(example.code) + "</code>"));
+        : el("pre", "", "<code>" + highlight(example.code) + "</code>"));
       wrap.appendChild(el("p", "takeaway",
         "<strong>" + (example.simple ? "Key point:" : "Why it matters:") + "</strong> " + md(example.takeaway)));
       return glossify(wrap);
@@ -534,7 +534,7 @@
         while (child) {
           var next = child.nextSibling;
           if (child.nodeType === 1) {
-            if (NO_TERMS[child.tagName] || child.classList.contains("term") || child.classList.contains("choice") || child.classList.contains("pchoice")) {
+            if (NO_TERMS[child.tagName] || child.classList.contains("term") || child.classList.contains("choice") || child.classList.contains("pchoice") || child.classList.contains("vsc")) {
               // skip
             } else if (child.tagName === "CODE") {
               linkCode(child);
@@ -717,6 +717,114 @@
       else document.addEventListener("DOMContentLoaded", ensurePopover);
     }
 
+    // ------------------------------------------------------------------
+    // Bionic reading: bold the first part of each word in reading text
+    // ------------------------------------------------------------------
+
+    var bionic = { on: get("bionic") === "1", roots: [], observer: null };
+    var BIONIC_SKIP = "pre, code, textarea, input, select, kbd, script, style, b.bio, .no-bionic, [contenteditable='true'], [data-bionic-toggle]";
+    var WORD = /[\p{L}\p{N}][\p{L}\p{N}'’]*/gu;
+
+    function bionicText(node) {
+      var parent = node.parentElement;
+      if (!parent || parent.closest(BIONIC_SKIP)) return;
+      var text = node.nodeValue;
+      WORD.lastIndex = 0;
+      if (!WORD.test(text)) return;
+      WORD.lastIndex = 0;
+      var frag = document.createDocumentFragment(), pos = 0, m;
+      while ((m = WORD.exec(text))) {
+        var w = m[0];
+        var n = w.length <= 3 ? 1 : Math.ceil(w.length * 0.45);
+        if (m.index > pos) frag.appendChild(document.createTextNode(text.slice(pos, m.index)));
+        var b = document.createElement("b");
+        b.className = "bio";
+        b.textContent = w.slice(0, n);
+        frag.appendChild(b);
+        if (n < w.length) frag.appendChild(document.createTextNode(w.slice(n)));
+        pos = m.index + w.length;
+      }
+      if (pos < text.length) frag.appendChild(document.createTextNode(text.slice(pos)));
+      parent.replaceChild(frag, node);
+    }
+
+    function bionicApply(node) {
+      if (node.nodeType === 3) { bionicText(node); return; }
+      if (node.nodeType !== 1 || node.closest(BIONIC_SKIP)) return;
+      var walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+      var texts = [];
+      while (walker.nextNode()) texts.push(walker.currentNode);
+      texts.forEach(bionicText);
+    }
+
+    function bionicRemove(root) {
+      Array.prototype.forEach.call(root.querySelectorAll("b.bio"), function (b) {
+        b.parentNode.replaceChild(document.createTextNode(b.textContent), b);
+      });
+      root.normalize();
+    }
+
+    function bionicRootSelector() { return bionic.roots.join(", "); }
+
+    function bionicEachRoot(fn) {
+      if (!bionic.roots.length) return;
+      Array.prototype.forEach.call(document.querySelectorAll(bionicRootSelector()), fn);
+    }
+
+    function bionicWatch() {
+      if (bionic.observer) return;
+      var opts = { childList: true, subtree: true };
+      bionic.observer = new MutationObserver(function (mutations) {
+        if (!bionic.on) return;
+        bionic.observer.disconnect();
+        var sel = bionicRootSelector();
+        mutations.forEach(function (mu) {
+          Array.prototype.forEach.call(mu.addedNodes, function (node) {
+            if (!node.isConnected) return;
+            var elNode = node.nodeType === 1 ? node : node.parentElement;
+            if (!elNode) return;
+            if (elNode.closest(sel)) bionicApply(node);
+            else if (node.nodeType === 1) Array.prototype.forEach.call(node.querySelectorAll(sel), bionicApply);
+          });
+        });
+        bionic.observer.observe(document.body, opts);
+      });
+      bionic.observer.observe(document.body, opts);
+    }
+
+    function syncBionicButtons() {
+      Array.prototype.forEach.call(document.querySelectorAll("[data-bionic-toggle]"), function (b) {
+        b.setAttribute("aria-pressed", bionic.on ? "true" : "false");
+      });
+    }
+
+    function setBionic(on) {
+      bionic.on = on;
+      set("bionic", on ? "1" : "0");
+      if (bionic.observer) bionic.observer.disconnect();
+      bionicEachRoot(on ? bionicApply : bionicRemove);
+      if (bionic.observer) bionic.observer.observe(document.body, { childList: true, subtree: true });
+      syncBionicButtons();
+    }
+
+    // roots: CSS selectors for the areas that hold reading text.
+    function setupBionic(roots) {
+      bionic.roots = roots;
+      bionicWatch();
+      document.addEventListener("click", function (e) {
+        var btn = e.target.closest && e.target.closest("[data-bionic-toggle]");
+        if (btn) setBionic(!bionic.on);
+      });
+      if (bionic.on) bionicEachRoot(bionicApply);
+      syncBionicButtons();
+    }
+
+    function bionicButton(extraClass) {
+      return '<button type="button" class="bionic-toggle' + (extraClass ? " " + extraClass : "") + '" data-bionic-toggle aria-pressed="' + (bionic.on ? "true" : "false") +
+        '" title="Bionic reading: bold the start of each word to help your eyes move through text">' +
+        '<span aria-hidden="true"><b>Bi</b>onic</span><span class="sr-only"> reading</span></button>';
+    }
+
     function renderGlossary(focusId) {
       var wrap = el("div", "glossary");
       var filter = el("input", "glossary-filter");
@@ -800,121 +908,313 @@
       return el("div");
     }
 
+    // ------------------------------------------------------------------
+    // Syntax highlighting (small TypeScript tokenizer, VS Code-style classes)
+    // ------------------------------------------------------------------
+
+    var KW_DECL = /^(const|let|var|function|class|interface|type|enum|extends|implements|new|this|super|typeof|keyof|instanceof|in|of|as|satisfies|is|readonly|private|public|protected|static|abstract|declare|namespace|module|get|set|async|infer|void|null|undefined|true|false|never|unknown|any)$/;
+    var KW_CTRL = /^(return|if|else|for|while|do|switch|case|default|break|continue|throw|try|catch|finally|await|import|export|from|yield)$/;
+    var KW_TYPE = /^(string|number|boolean|bigint|symbol|object)$/;
+    var TOKEN = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b\d[\d_]*(?:\.\d+)?n?\b)|([A-Za-z_$#][\w$]*)|(\s+)|([\s\S])/g;
+
+    function tokenize(code) {
+      var out = [], m, prevSig = "";
+      TOKEN.lastIndex = 0;
+      while ((m = TOKEN.exec(code))) {
+        var t = m[0], cls = "";
+        if (m[1]) cls = "tok-com";
+        else if (m[2]) cls = "tok-str";
+        else if (m[3]) cls = "tok-num";
+        else if (m[4]) {
+          var rest = code.slice(TOKEN.lastIndex);
+          if (KW_CTRL.test(t)) cls = "tok-ctrl";
+          else if (KW_TYPE.test(t) && prevSig !== ".") cls = "tok-type";
+          else if (KW_DECL.test(t) && prevSig !== ".") cls = "tok-kw";
+          else if (/^\s*(<[^<>()]*>)?\s*\(/.test(rest)) cls = "tok-fn";
+          else if (/^[A-Z]/.test(t)) cls = "tok-type";
+          else cls = "tok-var";
+        } else if (m[6]) {
+          cls = "tok-punc";
+        }
+        out.push({ cls: cls, text: t });
+        if (!m[5]) prevSig = t;
+      }
+      return out;
+    }
+
+    // Returns one HTML string per line, with spans re-opened across line breaks.
+    function highlightLines(code) {
+      var lines = [""];
+      tokenize(code).forEach(function (tok) {
+        tok.text.split("\n").forEach(function (part, i) {
+          if (i > 0) lines.push("");
+          if (part) lines[lines.length - 1] += tok.cls ? '<span class="' + tok.cls + '">' + esc(part) + "</span>" : esc(part);
+        });
+      });
+      return lines;
+    }
+
+    function highlight(code) { return highlightLines(code).join("\n"); }
+
+    // ------------------------------------------------------------------
+    // Guide code blocks: highlighted <pre>, or a VS Code-style editor
+    // ------------------------------------------------------------------
+
+    function insertText(textarea, text) {
+      textarea.focus();
+      // execCommand keeps the browser's undo history working; fall back if it's unavailable.
+      if (!document.execCommand || !document.execCommand("insertText", false, text)) {
+        textarea.setRangeText(text, textarea.selectionStart, textarea.selectionEnd, "end");
+        textarea.dispatchEvent(new Event("input"));
+      }
+    }
+
     function renderGuideCode(block) {
-      var wrap = el("div", "guide-code");
-      var pre = el("pre", "", "<code>" + esc(block.code) + "</code>");
-      wrap.appendChild(pre);
       if (!block.run) {
-        if (block.caption) wrap.appendChild(el("p", "guide-caption", rich(block.caption)));
-        return wrap;
+        var plainWrap = el("div", "guide-code");
+        plainWrap.appendChild(el("pre", "", "<code>" + highlight(block.code) + "</code>"));
+        if (block.caption) plainWrap.appendChild(el("p", "guide-caption", rich(block.caption)));
+        return plainWrap;
       }
 
-      var editor = el("textarea", "editor guide-editor");
-      editor.setAttribute("wrap", "off");
-      editor.setAttribute("spellcheck", "false");
-      editor.setAttribute("autocapitalize", "off");
-      editor.setAttribute("aria-label", "Editable example");
-      editor.value = block.code;
-      editor.hidden = true;
-      tabIndent(editor);
-      wrap.appendChild(editor);
-
-      var bar = el("div", "guide-code-bar");
-      var runBtn = el("button", "btn small primary", "Try it");
-      var jsBtn = el("button", "btn small", "Show JavaScript");
-      var resetBtn = el("button", "btn small", "Reset");
-      runBtn.type = jsBtn.type = resetBtn.type = "button";
-      resetBtn.hidden = true;
-      var status = el("span", "status");
-      bar.appendChild(runBtn);
-      bar.appendChild(jsBtn);
-      bar.appendChild(resetBtn);
-      bar.appendChild(status);
-      wrap.appendChild(bar);
+      var wrap = el("div", "guide-code");
+      var vsc = el("div", "vsc no-bionic");
+      vsc.innerHTML =
+        '<div class="vsc-titlebar">' +
+        '<span class="vsc-tab"><span class="ficon ts">TS</span>' + esc(block.file || "example.ts") + "</span>" +
+        '<span class="vsc-actions">' +
+        '<button type="button" class="vsc-btn vsc-run" title="Run (Ctrl+Enter)">▶ Run</button>' +
+        '<button type="button" class="vsc-btn vsc-js" title="See the JavaScript this compiles to">JS</button>' +
+        '<button type="button" class="vsc-btn vsc-reset" title="Reset to the original code" hidden>↺</button>' +
+        "</span></div>" +
+        '<div class="vsc-body">' +
+        '<pre class="vsc-gutter" aria-hidden="true"></pre>' +
+        '<div class="vsc-code">' +
+        '<pre class="vsc-hl" aria-hidden="true"><code></code></pre>' +
+        '<textarea class="vsc-input" wrap="off" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Editable TypeScript example. Ctrl+Enter runs it."></textarea>' +
+        "</div></div>" +
+        '<div class="vsc-panel" hidden>' +
+        '<div class="vsc-panel-tabs" role="tablist">' +
+        '<button type="button" role="tab" data-panel="problems">Problems <span class="vsc-badge" hidden></span></button>' +
+        '<button type="button" role="tab" data-panel="output">Output</button>' +
+        '<button type="button" role="tab" data-panel="js">JavaScript</button>' +
+        "</div>" +
+        '<div class="vsc-panel-body"></div>' +
+        "</div>" +
+        '<div class="vsc-status">' +
+        '<span class="vsc-status-problems">⊗ 0</span>' +
+        '<span class="vsc-status-msg">Edit the code, then ▶ Run</span>' +
+        '<span class="vsc-status-pos">Ln 1, Col 1</span>' +
+        "<span>TypeScript</span>" +
+        "</div>";
+      wrap.appendChild(vsc);
       if (block.caption) wrap.appendChild(el("p", "guide-caption", rich(block.caption)));
 
-      var out = el("div", "guide-out");
-      out.hidden = true;
-      wrap.appendChild(out);
-      var jsOut = el("div", "guide-js");
-      jsOut.hidden = true;
-      wrap.appendChild(jsOut);
+      var ta = vsc.querySelector(".vsc-input");
+      var hl = vsc.querySelector(".vsc-hl code");
+      var hlPre = vsc.querySelector(".vsc-hl");
+      var gutter = vsc.querySelector(".vsc-gutter");
+      var panel = vsc.querySelector(".vsc-panel");
+      var panelBody = vsc.querySelector(".vsc-panel-body");
+      var badge = vsc.querySelector(".vsc-badge");
+      var runBtn = vsc.querySelector(".vsc-run");
+      var jsBtn = vsc.querySelector(".vsc-js");
+      var resetBtn = vsc.querySelector(".vsc-reset");
+      var statusProblems = vsc.querySelector(".vsc-status-problems");
+      var statusMsg = vsc.querySelector(".vsc-status-msg");
+      var statusPos = vsc.querySelector(".vsc-status-pos");
 
-      function sizeEditor() {
-        editor.style.height = (editor.value.split("\n").length * 21 + 28) + "px";
+      var state = { diags: null, logs: null, js: null, errorLines: {}, active: "output", ran: false };
+      ta.value = block.code;
+
+      function paint() {
+        var lines = highlightLines(ta.value);
+        hl.innerHTML = lines.map(function (line, i) {
+          return '<span class="vsc-line' + (state.errorLines[i + 1] ? " err" : "") + '">' + (line || " ") + "</span>";
+        }).join("\n");
+        var nums = "";
+        for (var i = 1; i <= lines.length; i++) nums += '<span class="' + (state.errorLines[i] ? "err" : "") + '">' + i + "</span>\n";
+        gutter.innerHTML = nums;
+        // 20px lines + 10px top and bottom padding + 16px of room for a horizontal
+        // scrollbar, so the textarea never needs to scroll vertically.
+        ta.style.height = (lines.length * 20 + 36) + "px";
+        resetBtn.hidden = ta.value === block.code;
       }
 
-      function startEditing() {
-        if (!editor.hidden) return;
-        pre.hidden = true;
-        editor.hidden = false;
-        resetBtn.hidden = false;
-        runBtn.textContent = "Run";
-        sizeEditor();
+      function syncScroll() {
+        hlPre.scrollLeft = ta.scrollLeft;
+        hlPre.scrollTop = ta.scrollTop;
+      }
+
+      function updatePos() {
+        var before = ta.value.slice(0, ta.selectionStart).split("\n");
+        statusPos.textContent = "Ln " + before.length + ", Col " + (before[before.length - 1].length + 1);
+      }
+
+      function showPanel(which) {
+        state.active = which;
+        panel.hidden = false;
+        Array.prototype.forEach.call(panel.querySelectorAll("[data-panel]"), function (b) {
+          b.setAttribute("aria-selected", b.getAttribute("data-panel") === which ? "true" : "false");
+        });
+        panelBody.innerHTML = "";
+        if (which === "problems") {
+          if (!state.diags || !state.diags.length) {
+            panelBody.appendChild(el("div", "vsc-empty", state.diags ? "No problems have been detected." : "Run the code to check it."));
+            return;
+          }
+          state.diags.forEach(function (d) {
+            var row = el("button", "vsc-problem",
+              '<span class="vsc-x">⊗</span><span class="vsc-problem-msg"></span><span class="vsc-problem-pos">' + (d.line ? "[Ln " + d.line + ", Col " + d.column + "]" : "") + "</span>");
+            row.type = "button";
+            row.querySelector(".vsc-problem-msg").textContent = d.message;
+            row.addEventListener("click", function () { goToLine(d.line, d.column); });
+            panelBody.appendChild(row);
+          });
+        } else if (which === "output") {
+          var pre = el("pre", "vsc-terminal");
+          if (state.diags && state.diags.length) pre.textContent = "Not run: fix the problems first.";
+          else if (state.logs) pre.textContent = state.logs.length ? state.logs.join("\n") : "(no console output)";
+          else pre.textContent = "Run the code to see its output.";
+          panelBody.appendChild(pre);
+        } else {
+          var jsPre = el("pre", "vsc-terminal");
+          jsPre.innerHTML = state.js === null ? "…" : highlight(state.js);
+          panelBody.appendChild(el("div", "vsc-panel-note", "What runs: the same code with every type erased."));
+          panelBody.appendChild(jsPre);
+        }
+      }
+
+      function goToLine(line, col) {
+        if (!line) return;
+        var lines = ta.value.split("\n"), pos = 0;
+        for (var i = 0; i < line - 1 && i < lines.length; i++) pos += lines[i].length + 1;
+        pos += Math.max(0, (col || 1) - 1);
+        ta.focus();
+        ta.setSelectionRange(pos, pos);
+        updatePos();
       }
 
       function withCompiler(work) {
-        status.textContent = "Loading the TypeScript compiler…";
+        statusMsg.textContent = "Loading the TypeScript compiler…";
         runBtn.disabled = jsBtn.disabled = true;
         engine.ensure().then(work).catch(function (err) {
-          out.hidden = false;
-          out.innerHTML = '<div class="guide-out-label bad">Error</div><pre class="guide-out-lines bad"></pre>';
-          out.querySelector("pre").textContent = err.message;
+          state.diags = [{ message: err.message, line: 0, column: 0 }];
+          showPanel("problems");
         }).then(function () {
-          status.textContent = "";
           runBtn.disabled = jsBtn.disabled = false;
         });
       }
 
       function run() {
-        startEditing();
         withCompiler(function () {
-          var code = editor.value;
+          var code = ta.value;
           var diags = engine.checkSnippet(code);
-          out.hidden = false;
-          if (diags.length) {
-            out.innerHTML = '<div class="guide-out-label bad">Type errors</div><pre class="guide-out-lines bad"></pre>';
-            out.querySelector("pre").textContent = diags.map(function (d) {
-              return (d.line ? "Line " + d.line + ": " : "") + d.message;
-            }).join("\n");
-            return;
+          state.diags = diags;
+          state.errorLines = {};
+          diags.forEach(function (d) { if (d.line) state.errorLines[d.line] = true; });
+          state.js = engine.transpileForRun(code).replace(/\n+$/, "");
+          state.logs = null;
+          if (!diags.length) {
+            var result = engine.runJs(state.js, []);
+            state.logs = result.logs.slice();
+            if (result.error) state.logs.push("Uncaught " + (result.error.name || "Error") + ": " + result.error.message);
           }
-          var result = engine.runJs(engine.transpileForRun(code), []);
-          var lines = result.logs.slice();
-          if (result.error) lines.push("Runtime error: " + result.error.message);
-          out.innerHTML = '<div class="guide-out-label good">✓ Compiles. Output</div><pre class="guide-out-lines"></pre>';
-          out.querySelector("pre").textContent = lines.length ? lines.join("\n") : "(no console output)";
-          if (!jsOut.hidden) showJs();
+          state.ran = true;
+          paint();
+          var n = diags.length;
+          statusProblems.textContent = "⊗ " + n;
+          statusProblems.classList.toggle("bad", n > 0);
+          badge.hidden = !n;
+          badge.textContent = n;
+          statusMsg.textContent = n ? n + " problem" + (n === 1 ? "" : "s") + ": not run" : "✓ Compiled and ran";
+          showPanel(n ? "problems" : (state.active === "js" ? "js" : "output"));
         });
-      }
-
-      function showJs() {
-        var js = engine.transpileForRun(editor.value).replace(/\n+$/, "");
-        jsOut.hidden = false;
-        jsOut.innerHTML = '<div class="guide-out-label">Emitted JavaScript (types erased)</div><pre></pre>';
-        jsOut.querySelector("pre").textContent = js;
-        jsBtn.textContent = "Hide JavaScript";
       }
 
       runBtn.addEventListener("click", run);
       jsBtn.addEventListener("click", function () {
-        if (!jsOut.hidden) {
-          jsOut.hidden = true;
-          jsBtn.textContent = "Show JavaScript";
-          return;
-        }
-        withCompiler(showJs);
+        if (!panel.hidden && state.active === "js") { panel.hidden = true; return; }
+        withCompiler(function () {
+          state.js = engine.transpileForRun(ta.value).replace(/\n+$/, "");
+          statusMsg.textContent = "Showing the emitted JavaScript";
+          showPanel("js");
+        });
       });
       resetBtn.addEventListener("click", function () {
-        editor.value = block.code;
-        sizeEditor();
-        out.hidden = true;
-        if (!jsOut.hidden) withCompiler(showJs);
+        ta.value = block.code;
+        state = { diags: null, logs: null, js: null, errorLines: {}, active: "output", ran: false };
+        panel.hidden = true;
+        statusProblems.textContent = "⊗ 0";
+        statusProblems.classList.remove("bad");
+        badge.hidden = true;
+        statusMsg.textContent = "Reset to the original code";
+        paint();
       });
-      editor.addEventListener("input", sizeEditor);
-      editor.addEventListener("keydown", function (e) {
-        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); run(); }
+      Array.prototype.forEach.call(panel.querySelectorAll("[data-panel]"), function (b) {
+        b.addEventListener("click", function () {
+          var which = b.getAttribute("data-panel");
+          if (which === "js" && state.js === null) {
+            withCompiler(function () { state.js = engine.transpileForRun(ta.value).replace(/\n+$/, ""); showPanel("js"); });
+          } else {
+            showPanel(which);
+          }
+        });
       });
+
+      ta.addEventListener("input", function () {
+        // Edited since the last run: drop the stale error marks until it runs again.
+        state.errorLines = {};
+        paint();
+        syncScroll();
+        updatePos();
+      });
+      ta.addEventListener("scroll", syncScroll);
+      ta.addEventListener("click", updatePos);
+      ta.addEventListener("keyup", updatePos);
+      ta.addEventListener("focus", function () { engine.ensure().catch(function () {}); });
+      ta.addEventListener("keydown", function (e) {
+        var v = ta.value, s = ta.selectionStart, end = ta.selectionEnd;
+        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          run();
+        } else if (e.key === "Enter" && !e.shiftKey && !e.altKey) {
+          // Keep the current line's indentation; indent one more level after an opening bracket.
+          e.preventDefault();
+          var lineStart = v.lastIndexOf("\n", s - 1) + 1;
+          var indent = v.slice(lineStart, s).match(/^\s*/)[0];
+          var before = v.slice(lineStart, s).replace(/\s+$/, "");
+          var opens = /[{([]$/.test(before);
+          var closes = /^\s*[})\]]/.test(v.slice(end));
+          if (opens && closes) {
+            insertText(ta, "\n" + indent + "  " + "\n" + indent);
+            var caret = s + 1 + indent.length + 2;
+            ta.setSelectionRange(caret, caret);
+          } else {
+            insertText(ta, "\n" + indent + (opens ? "  " : ""));
+          }
+        } else if (e.key === "Tab" && !e.shiftKey && s === end) {
+          e.preventDefault();
+          insertText(ta, "  ");
+        } else if (e.key === "/" && (e.ctrlKey || e.metaKey)) {
+          // Toggle // comments on the selected lines.
+          e.preventDefault();
+          var from = v.lastIndexOf("\n", s - 1) + 1;
+          var toNl = v.indexOf("\n", Math.max(end - (end > s && v[end - 1] === "\n" ? 1 : 0), s));
+          var to = toNl === -1 ? v.length : toNl;
+          var chunk = v.slice(from, to).split("\n");
+          var allCommented = chunk.every(function (l) { return !l.trim() || /^\s*\/\//.test(l); });
+          var changed = chunk.map(function (l) {
+            if (!l.trim()) return l;
+            return allCommented ? l.replace(/^(\s*)\/\/ ?/, "$1") : l.replace(/^(\s*)/, "$1// ");
+          }).join("\n");
+          ta.setSelectionRange(from, to);
+          insertText(ta, changed);
+          ta.setSelectionRange(from, from + changed.length);
+        }
+      });
+
+      paint();
       return wrap;
     }
 
@@ -1418,6 +1718,8 @@
       renderExamples: renderExamples,
       renderGuide: renderGuide,
       renderGlossary: renderGlossary,
+      setupBionic: setupBionic,
+      bionicButton: bionicButton,
       glossaryCount: GLOSSARY.length,
       renderLabTask: renderLabTask,
       search: search,

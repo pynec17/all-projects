@@ -133,6 +133,7 @@
       '<header class="level-bar">' +
       '<a class="map-link" href="#">◀ Map</a>' +
       '<span class="level-name">Glossary</span>' +
+      ui.bionicButton("bar-bionic glossary-bionic") +
       '<div class="stats" data-stats></div>' +
       "</header>" +
       '<main class="level-main">' +
@@ -158,7 +159,7 @@
       '<a class="back" href="../">&#9664; INDEX</a>' +
       '<div class="title-row"><h1>TypeScript Quest</h1><div class="stats" data-stats></div></div>' +
       '<p class="tagline">Learn TypeScript one level at a time. Get halfway through a level to unlock the next one, and earn XP for everything you solve.</p>' +
-      '<a class="glossary-link" href="#glossary">Glossary · ' + ui.glossaryCount + " terms →</a>" +
+      '<div class="home-links"><a class="glossary-link" href="#glossary">Glossary · ' + ui.glossaryCount + " terms →</a>" + ui.bionicButton() + "</div>" +
       '<div class="goal-row"><div class="goal">' + squares + '</div><span>' +
       (today >= goal ? "Daily goal done" : today + " / " + goal + " today") + '</span><span class="overall">' + Math.round((t.done / t.total) * 100) + "% complete</span></div>" +
       "</header>" +
@@ -218,6 +219,7 @@
       '<a class="map-link" href="#">◀ Map</a>' +
       '<span class="level-name"><span class="level-num">' + levelLabel(level) + "</span> " + esc(level.title) + "</span>" +
       '<button type="button" class="handbook-btn" id="handbook-btn">Handbook</button>' +
+      ui.bionicButton("bar-bionic") +
       '<div class="stats" data-stats></div>' +
       "</header>" +
       '<main class="level-main">' +
@@ -229,6 +231,7 @@
       '<nav class="bottom-bar" aria-label="Quick actions">' +
       '<a href="#">◀ Map</a>' +
       '<button type="button" id="handbook-btn-2">Handbook</button>' +
+      ui.bionicButton() +
       '<span data-stats class="stats"></span>' +
       "</nav>";
 
@@ -294,6 +297,8 @@
     if (!drawer.hidden) return;
     ui.handleKey(e);
   });
+
+  ui.setupBionic([".level-main", ".home-head", ".drawer-body", ".term-pop"]);
 
   window.addEventListener("hashchange", render);
   render();
