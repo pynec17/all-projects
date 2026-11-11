@@ -481,13 +481,227 @@
       return wrap;
     }
 
-    function renderNotes(notes) {
-      var wrap = el("div", "notes");
-      notes.forEach(function (n) {
-        var item = el("div", "note-item");
-        item.innerHTML = "<h4>" + esc(n.title) + "</h4><p>" + md(n.text) + "</p>" + (n.code ? "<pre><code>" + esc(n.code) + "</code></pre>" : "");
-        wrap.appendChild(item);
+    // ------------------------------------------------------------------
+    // Guide: the per-level reference guide (content in lessons.js)
+    // ------------------------------------------------------------------
+
+    // md() plus **bold** and *italic*, applied outside <code> spans only.
+    function rich(s) {
+      return md(s).split(/(<code>[\s\S]*?<\/code>|<pre>[\s\S]*?<\/pre>)/).map(function (part, i) {
+        if (i % 2) return part;
+        return part
+          .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+          .replace(/(^|[\s(“"])\*([^*\s][^*]*)\*/g, "$1<em>$2</em>");
+      }).join("");
+    }
+
+    var CALLOUTS = { tip: "Tip", warn: "Watch out", real: "In real projects" };
+
+    function renderGuideBlock(block) {
+      if (typeof block === "string") return el("p", "", rich(block));
+      if (block.code !== undefined) return renderGuideCode(block);
+      if (block.list) {
+        var ul = el("ul", "guide-list");
+        block.list.forEach(function (item) { ul.appendChild(el("li", "", rich(item))); });
+        return ul;
+      }
+      for (var kind in CALLOUTS) {
+        if (block[kind]) {
+          return el("div", "guide-callout " + kind, '<span class="guide-callout-label">' + CALLOUTS[kind] + "</span>" + rich(block[kind]));
+        }
+      }
+      return el("div");
+    }
+
+    function renderGuideCode(block) {
+      var wrap = el("div", "guide-code");
+      var pre = el("pre", "", "<code>" + esc(block.code) + "</code>");
+      wrap.appendChild(pre);
+      if (!block.run) {
+        if (block.caption) wrap.appendChild(el("p", "guide-caption", rich(block.caption)));
+        return wrap;
+      }
+
+      var editor = el("textarea", "editor guide-editor");
+      editor.setAttribute("wrap", "off");
+      editor.setAttribute("spellcheck", "false");
+      editor.setAttribute("autocapitalize", "off");
+      editor.setAttribute("aria-label", "Editable example");
+      editor.value = block.code;
+      editor.hidden = true;
+      tabIndent(editor);
+      wrap.appendChild(editor);
+
+      var bar = el("div", "guide-code-bar");
+      var runBtn = el("button", "btn small primary", "Try it");
+      var jsBtn = el("button", "btn small", "Show JavaScript");
+      var resetBtn = el("button", "btn small", "Reset");
+      runBtn.type = jsBtn.type = resetBtn.type = "button";
+      resetBtn.hidden = true;
+      var status = el("span", "status");
+      bar.appendChild(runBtn);
+      bar.appendChild(jsBtn);
+      bar.appendChild(resetBtn);
+      bar.appendChild(status);
+      wrap.appendChild(bar);
+      if (block.caption) wrap.appendChild(el("p", "guide-caption", rich(block.caption)));
+
+      var out = el("div", "guide-out");
+      out.hidden = true;
+      wrap.appendChild(out);
+      var jsOut = el("div", "guide-js");
+      jsOut.hidden = true;
+      wrap.appendChild(jsOut);
+
+      function sizeEditor() {
+        editor.style.height = (editor.value.split("\n").length * 21 + 28) + "px";
+      }
+
+      function startEditing() {
+        if (!editor.hidden) return;
+        pre.hidden = true;
+        editor.hidden = false;
+        resetBtn.hidden = false;
+        runBtn.textContent = "Run";
+        sizeEditor();
+      }
+
+      function withCompiler(work) {
+        status.textContent = "Loading the TypeScript compiler…";
+        runBtn.disabled = jsBtn.disabled = true;
+        engine.ensure().then(work).catch(function (err) {
+          out.hidden = false;
+          out.innerHTML = '<div class="guide-out-label bad">Error</div><pre class="guide-out-lines bad"></pre>';
+          out.querySelector("pre").textContent = err.message;
+        }).then(function () {
+          status.textContent = "";
+          runBtn.disabled = jsBtn.disabled = false;
+        });
+      }
+
+      function run() {
+        startEditing();
+        withCompiler(function () {
+          var code = editor.value;
+          var diags = engine.checkSnippet(code);
+          out.hidden = false;
+          if (diags.length) {
+            out.innerHTML = '<div class="guide-out-label bad">Type errors</div><pre class="guide-out-lines bad"></pre>';
+            out.querySelector("pre").textContent = diags.map(function (d) {
+              return (d.line ? "Line " + d.line + ": " : "") + d.message;
+            }).join("\n");
+            return;
+          }
+          var result = engine.runJs(engine.transpileForRun(code), []);
+          var lines = result.logs.slice();
+          if (result.error) lines.push("Runtime error: " + result.error.message);
+          out.innerHTML = '<div class="guide-out-label good">✓ Compiles. Output</div><pre class="guide-out-lines"></pre>';
+          out.querySelector("pre").textContent = lines.length ? lines.join("\n") : "(no console output)";
+          if (!jsOut.hidden) showJs();
+        });
+      }
+
+      function showJs() {
+        var js = engine.transpileForRun(editor.value).replace(/\n+$/, "");
+        jsOut.hidden = false;
+        jsOut.innerHTML = '<div class="guide-out-label">Emitted JavaScript (types erased)</div><pre></pre>';
+        jsOut.querySelector("pre").textContent = js;
+        jsBtn.textContent = "Hide JavaScript";
+      }
+
+      runBtn.addEventListener("click", run);
+      jsBtn.addEventListener("click", function () {
+        if (!jsOut.hidden) {
+          jsOut.hidden = true;
+          jsBtn.textContent = "Show JavaScript";
+          return;
+        }
+        withCompiler(showJs);
       });
+      resetBtn.addEventListener("click", function () {
+        editor.value = block.code;
+        sizeEditor();
+        out.hidden = true;
+        if (!jsOut.hidden) withCompiler(showJs);
+      });
+      editor.addEventListener("input", sizeEditor);
+      editor.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); run(); }
+      });
+      return wrap;
+    }
+
+    function renderGuide(level, opts) {
+      opts = opts || {};
+      var guide = level.guide;
+      var wrap = el("div", "guide");
+      if (!guide) {
+        wrap.appendChild(el("p", "section-intro", "No guide for this one yet."));
+        return wrap;
+      }
+
+      wrap.appendChild(el("div", "guide-meta",
+        "<span>Reference guide</span><span>~" + guide.minutes + " min read</span>"));
+      wrap.appendChild(el("p", "guide-summary", rich(guide.summary)));
+
+      if (guide.glance && guide.glance.length) {
+        var glance = el("div", "guide-glance");
+        var rows = guide.glance.map(function (row) {
+          return "<tr><td><code>" + esc(row[0]) + "</code></td><td>" + rich(row[1]) + "</td></tr>";
+        }).join("");
+        glance.innerHTML = "<h3>At a glance</h3><table><tbody>" + rows + "</tbody></table>";
+        wrap.appendChild(glance);
+      }
+
+      var sectionEls = [];
+      if (!opts.compact && guide.sections.length > 2) {
+        var jump = el("nav", "guide-jump");
+        jump.setAttribute("aria-label", "Jump to a section");
+        guide.sections.forEach(function (s, i) {
+          var b = el("button", "", esc(s.title));
+          b.type = "button";
+          b.addEventListener("click", function () {
+            sectionEls[i].scrollIntoView({ behavior: "smooth", block: "start" });
+          });
+          jump.appendChild(b);
+        });
+        wrap.appendChild(jump);
+      }
+
+      guide.sections.forEach(function (s) {
+        var sec = el("section", "guide-section");
+        sec.appendChild(el("h3", "", rich(s.title)));
+        s.blocks.forEach(function (b) { sec.appendChild(renderGuideBlock(b)); });
+        sectionEls.push(sec);
+        wrap.appendChild(sec);
+      });
+
+      if (guide.gotchas && guide.gotchas.length) {
+        var g = el("section", "guide-section guide-gotchas");
+        g.appendChild(el("h3", "", "Gotchas"));
+        var list = el("ul", "gotcha-list");
+        guide.gotchas.forEach(function (item) {
+          var li = el("li", "", '<p>' + rich(item.text) + "</p>");
+          if (item.bad || item.good) {
+            var pair = el("div", "gotcha-pair");
+            if (item.bad) pair.appendChild(el("div", "gotcha-code bad", '<span class="gotcha-mark">✗</span><pre><code>' + esc(item.bad) + "</code></pre>"));
+            if (item.good) pair.appendChild(el("div", "gotcha-code good", '<span class="gotcha-mark">✓</span><pre><code>' + esc(item.good) + "</code></pre>"));
+            li.appendChild(pair);
+          }
+          list.appendChild(li);
+        });
+        g.appendChild(list);
+        sectionEls.push(g);
+        wrap.appendChild(g);
+      }
+
+      wrap.scrollToSection = function (i) {
+        var target = sectionEls[i];
+        if (!target) return;
+        setTimeout(function () {
+          window.scrollTo(0, target.getBoundingClientRect().top + window.scrollY - 80);
+        }, 50);
+      };
       return wrap;
     }
 
@@ -854,9 +1068,19 @@
             items.push({ level: level, section: "tasks", index: i, kind: "Lab task", text: t.title, extra: plain(t.prompt || t.question || "") });
           });
         }
-        level.notes.forEach(function (n, i) {
-          items.push({ level: level, section: "notes", index: i, kind: "Note", text: n.title, extra: plain(n.text) });
-        });
+        // Guide hits: index 0 is the top of the guide, index i + 1 is section i.
+        if (level.guide) {
+          level.guide.glance.forEach(function (row) {
+            items.push({ level: level, section: "guide", index: 0, kind: "Guide", text: row[0], extra: plain(row[1]) });
+          });
+          level.guide.sections.forEach(function (s, i) {
+            var body = s.blocks.map(function (b) {
+              if (typeof b === "string") return b;
+              return b.code || (b.list ? b.list.join(" ") : "") || b.tip || b.warn || b.real || "";
+            }).join(" ");
+            items.push({ level: level, section: "guide", index: i + 1, kind: "Guide", text: plain(s.title), extra: plain(body) });
+          });
+        }
       });
       return items;
     }
@@ -896,7 +1120,7 @@
       handleKey: handleKey,
       renderChallenge: renderChallenge,
       renderExample: renderExample,
-      renderNotes: renderNotes,
+      renderGuide: renderGuide,
       renderLabTask: renderLabTask,
       search: search,
       get: get,

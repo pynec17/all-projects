@@ -28,15 +28,18 @@
     return "★★★".slice(0, n) + "☆☆☆".slice(0, 3 - n);
   }
 
+  var GUIDE = { id: "guide", index: 0, label: "Guide" };
+
   function sectionsFor(level) {
     if (level.kind === "lab") {
-      return level.lab.tasks.map(function (t, i) {
+      return [GUIDE].concat(level.lab.tasks.map(function (t, i) {
         return { id: "tasks", index: i, label: "Task " + (i + 1), done: ui.isDone("lab", t.id) };
-      });
+      }));
     }
     var th = ui.sectionCounts(level, "theory");
     var ch = ui.sectionCounts(level, "challenges");
     return [
+      GUIDE,
       { id: "theory", index: 0, label: "Theory", count: th },
       { id: "challenges", index: 0, label: "Challenges", count: ch },
       { id: "examples", index: 0, label: "Examples" }
@@ -48,6 +51,8 @@
   }
 
   function resumeHash(level) {
+    // A level you haven't started opens on its guide.
+    if (ui.levelCounts(level).done === 0) return hashFor(level, "guide", 0);
     if (level.kind === "lab") {
       var t = level.lab.tasks.findIndex(function (task) { return !ui.isDone("lab", task.id); });
       return hashFor(level, "tasks", Math.max(0, t));
@@ -61,7 +66,7 @@
     var parts = location.hash.replace(/^#\/?/, "").split("/");
     var level = ui.levels[ui.levelIndex(parts[0])];
     if (!level) return { home: true };
-    var valid = level.kind === "lab" ? ["tasks"] : ["theory", "challenges", "examples"];
+    var valid = level.kind === "lab" ? ["guide", "tasks"] : ["guide", "theory", "challenges", "examples"];
     var section = valid.indexOf(parts[1]) === -1 ? valid[0] : parts[1];
     var index = Math.max(0, parseInt(parts[2], 10) || 0);
     if (section === "tasks") index = Math.min(index, level.lab.tasks.length - 1);
@@ -212,7 +217,9 @@
     document.getElementById("handbook-btn-2").addEventListener("click", openDrawer);
 
     var section = document.getElementById("section");
-    if (route.section === "theory") {
+    if (route.section === "guide") {
+      section.appendChild(ui.renderGuide(level));
+    } else if (route.section === "theory") {
       section.appendChild(ui.renderDeck(level.chapter, route.index, function (i) {
         history.replaceState(null, "", hashFor(level, "theory", i));
         route.index = i;
@@ -243,7 +250,7 @@
     var level = route.level;
     drawerTitle.textContent = "Handbook · " + level.title;
     drawerBody.innerHTML = "";
-    drawerBody.appendChild(ui.renderNotes(level.notes));
+    drawerBody.appendChild(ui.renderGuide(level, { compact: true }));
     drawer.hidden = false;
     scrim.hidden = false;
     document.body.classList.add("drawer-open");

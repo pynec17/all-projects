@@ -47,7 +47,7 @@ html, body {
 
 a { color: inherit; }
 
-.deck-card, .challenge, .example { box-shadow: 4px 4px 0 var(--ink); }
+.deck-card, .challenge, .example, .guide-glance, .guide-section { box-shadow: 4px 4px 0 var(--ink); }
 .choice { border-width: 1.5px; border-color: #d8ccb2; }
 .choice:hover { border-color: var(--ink); }
 .btn { border-width: 1.5px; border-color: var(--ink); font-weight: 500; }
@@ -361,7 +361,8 @@ h1 {
 }
 
 .drawer-body { padding: 16px 18px 40px; overflow: auto; }
-.drawer .note-item { box-shadow: none; }
+.drawer .guide-glance, .drawer .guide-section { box-shadow: none; }
+.drawer .guide-glance, .drawer .guide-section { padding: 14px; }
 
 body.drawer-open { overflow: hidden; }
 
