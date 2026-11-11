@@ -39,9 +39,9 @@
     }
     return [
       GUIDE,
+      { id: "examples", index: 0, label: "Examples", short: "Examples" },
       { id: "quiz", index: 0, label: "Quiz", short: "Quiz", count: ui.sectionCounts(level, "theory") },
-      { id: "challenges", index: 0, label: "Code challenges", short: "Challenges", count: ui.sectionCounts(level, "challenges") },
-      { id: "examples", index: 0, label: "Real-world examples", short: "Examples" }
+      { id: "challenges", index: 0, label: "Code challenges", short: "Challenges", count: ui.sectionCounts(level, "challenges") }
     ];
   }
 
@@ -54,7 +54,7 @@
     var level = ui.levels[ui.levelIndex(parts[0])];
     if (!level) level = ui.levels[ui.levelIndex(ui.get("last"))] || ui.firstUnfinished();
     if (parts[1] === "theory") parts[1] = "quiz";   // old links
-    var valid = level.kind === "lab" ? ["guide", "tasks"] : ["guide", "quiz", "challenges", "examples"];
+    var valid = level.kind === "lab" ? ["guide", "tasks"] : ["guide", "examples", "quiz", "challenges"];
     var section = valid.indexOf(parts[1]) === -1 ? valid[0] : parts[1];
     var index = Math.max(0, parseInt(parts[2], 10) || 0);
     if (section === "tasks") index = Math.min(index, level.lab.tasks.length - 1);
@@ -219,8 +219,7 @@
       level.chapter.challenges.forEach(function (c) { body.appendChild(ui.renderChallenge(c)); });
       scrollToNth(".challenge", route.index);
     } else if (route.section === "examples") {
-      body.appendChild(el("p", "section-intro", "Patterns you'll meet in real codebases, and why they're typed the way they are."));
-      level.chapter.examples.forEach(function (ex) { body.appendChild(ui.renderExample(ex)); });
+      body.appendChild(ui.renderExamples(level.chapter));
       scrollToNth(".example", route.index);
     } else if (route.section === "guide") {
       var guide = ui.renderGuide(level);

@@ -301,6 +301,16 @@ pre code { font-family: inherit; }
 
 /* Examples and notes */
 
+.examples-group {
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  font-size: 19px;
+  margin: 26px 0 2px;
+}
+
+.examples > .examples-group:first-child { margin-top: 4px; }
+.examples-intro { color: var(--muted); font-size: 14px; margin: 0 0 12px; }
+
 .example .scenario { margin: 6px 0 12px; line-height: 1.55; }
 .example pre { margin-bottom: 12px; }
 .example .takeaway { margin: 0; line-height: 1.6; font-size: 15px; }
