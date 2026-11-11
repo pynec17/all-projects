@@ -40,9 +40,9 @@
     var ch = ui.sectionCounts(level, "challenges");
     return [
       GUIDE,
+      { id: "examples", index: 0, label: "Examples" },
       { id: "quiz", index: 0, label: "Quiz", count: th },
-      { id: "challenges", index: 0, label: "Challenges", count: ch },
-      { id: "examples", index: 0, label: "Examples" }
+      { id: "challenges", index: 0, label: "Challenges", count: ch }
     ];
   }
 
@@ -67,7 +67,7 @@
     var level = ui.levels[ui.levelIndex(parts[0])];
     if (!level) return { home: true };
     if (parts[1] === "theory") parts[1] = "quiz";   // old links
-    var valid = level.kind === "lab" ? ["guide", "tasks"] : ["guide", "quiz", "challenges", "examples"];
+    var valid = level.kind === "lab" ? ["guide", "tasks"] : ["guide", "examples", "quiz", "challenges"];
     var section = valid.indexOf(parts[1]) === -1 ? valid[0] : parts[1];
     var index = Math.max(0, parseInt(parts[2], 10) || 0);
     if (section === "tasks") index = Math.min(index, level.lab.tasks.length - 1);
@@ -228,7 +228,7 @@
     } else if (route.section === "challenges") {
       level.chapter.challenges.forEach(function (ch) { section.appendChild(ui.renderChallenge(ch)); });
     } else if (route.section === "examples") {
-      level.chapter.examples.forEach(function (ex) { section.appendChild(ui.renderExample(ex)); });
+      section.appendChild(ui.renderExamples(level.chapter));
     } else {
       section.appendChild(ui.renderLabTask(level.lab.tasks[route.index]));
     }

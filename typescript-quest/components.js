@@ -471,13 +471,32 @@
     }
 
     function renderExample(example) {
-      var wrap = el("div", "example");
+      var wrap = el("div", "example" + (example.simple ? " simple" : ""));
       wrap.id = "example-" + example.id;
       wrap.innerHTML =
         "<h3>" + md(example.title) + "</h3>" +
-        '<p class="scenario">' + md(example.scenario) + "</p>" +
-        "<pre><code>" + esc(example.code) + "</code></pre>" +
-        '<p class="takeaway"><strong>Why it matters:</strong> ' + md(example.takeaway) + "</p>";
+        '<p class="scenario">' + md(example.scenario) + "</p>";
+      // Simple examples are self-contained, so they get Try it / Show JavaScript.
+      wrap.appendChild(example.simple
+        ? renderGuideCode({ code: example.code, run: true })
+        : el("pre", "", "<code>" + esc(example.code) + "</code>"));
+      wrap.appendChild(el("p", "takeaway",
+        "<strong>" + (example.simple ? "Key point:" : "Why it matters:") + "</strong> " + md(example.takeaway)));
+      return wrap;
+    }
+
+    function renderExamples(chapter) {
+      var wrap = el("div", "examples");
+      var groups = [
+        { title: "Simple examples", intro: "Short and self-contained. Press Try it to edit and run them.", items: chapter.examples.filter(function (e) { return e.simple; }) },
+        { title: "Real-world examples", intro: "Patterns you'll meet in real codebases, and why they're typed the way they are.", items: chapter.examples.filter(function (e) { return !e.simple; }) }
+      ];
+      groups.forEach(function (g) {
+        if (!g.items.length) return;
+        wrap.appendChild(el("h2", "examples-group", esc(g.title)));
+        wrap.appendChild(el("p", "examples-intro", esc(g.intro)));
+        g.items.forEach(function (ex) { wrap.appendChild(renderExample(ex)); });
+      });
       return wrap;
     }
 
@@ -1120,6 +1139,7 @@
       handleKey: handleKey,
       renderChallenge: renderChallenge,
       renderExample: renderExample,
+      renderExamples: renderExamples,
       renderGuide: renderGuide,
       renderLabTask: renderLabTask,
       search: search,

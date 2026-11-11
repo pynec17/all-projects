@@ -2501,6 +2501,436 @@
     }
   ];
 
+  // ------------------------------------------------------------------
+  // Simple examples: short, runnable, shown before each chapter's
+  // real-world examples (simple: true makes them runnable with Try it).
+  // ------------------------------------------------------------------
+
+  function c(s) {
+    var lines = s.replace(/^\n/, "").replace(/\s+$/, "").split("\n");
+    var indent = Infinity;
+    lines.forEach(function (l) { if (l.trim()) indent = Math.min(indent, l.match(/^ */)[0].length); });
+    return lines.map(function (l) { return l.slice(indent); }).join("\n");
+  }
+
+  var SIMPLE = {
+    basics: [
+      {
+        id: "basics-s1",
+        title: "A few typed variables",
+        scenario: "The everyday types in action. TypeScript works out each type from its value.",
+        code: c(`
+          let username = "sam_k";     // string
+          let age = 31;               // number
+          let isMember = true;        // boolean
+          const favourites: string[] = ["tea", "maps"];
+
+          console.log(username + " is " + age + ", member: " + isMember);
+          console.log("Favourites: " + favourites.join(", "));
+        `),
+        takeaway: "Only `favourites` has an annotation, and even that one is optional here. Try `age = \"old\"` to see inference protect you."
+      },
+      {
+        id: "basics-s2",
+        title: "A tuple for a map coordinate",
+        scenario: "A latitude and longitude always come as exactly two numbers, in that order.",
+        code: c(`
+          const home: [number, number] = [51.5, -0.12];
+          const [lat, lng] = home;
+
+          console.log("Lat " + lat + ", lng " + lng);
+          // home[2];  // error: this tuple only has 2 elements
+        `),
+        takeaway: "A tuple knows its length and the type at each position, so destructuring gives you typed variables."
+      },
+      {
+        id: "basics-s3",
+        title: "A traffic light as a literal union",
+        scenario: "A value that can only be one of a few exact strings.",
+        code: c(`
+          type Light = "red" | "amber" | "green";
+
+          function canGo(light: Light): boolean {
+            return light === "green";
+          }
+
+          console.log(canGo("green"), canGo("red"));
+          // canGo("blue");  // error: "blue" isn't a Light
+        `),
+        takeaway: "Typos like `\"gren\"` become compile errors instead of silent bugs."
+      }
+    ],
+    functions: [
+      {
+        id: "fn-s1",
+        title: "Celsius to Fahrenheit",
+        scenario: "A small function with a typed parameter and return value.",
+        code: c(`
+          function toFahrenheit(celsius: number): number {
+            return celsius * 9 / 5 + 32;
+          }
+
+          console.log(toFahrenheit(20));    // 68
+          console.log(toFahrenheit(-40));   // -40
+          // toFahrenheit("20");            // error: string isn't a number
+        `),
+        takeaway: "The parameter type stops anyone passing a string by accident."
+      },
+      {
+        id: "fn-s2",
+        title: "A greeting with a default",
+        scenario: "A parameter callers can leave out.",
+        code: c(`
+          function welcome(person: string, greeting = "Hello"): string {
+            return greeting + ", " + person + "!";
+          }
+
+          console.log(welcome("Ana"));
+          console.log(welcome("Ana", "Hi"));
+        `),
+        takeaway: "`greeting` is inferred as `string` from its default, and it's never `undefined` inside the function."
+      },
+      {
+        id: "fn-s3",
+        title: "Callbacks with map and filter",
+        scenario: "Passing small functions to array methods.",
+        code: c(`
+          const prices = [4, 10, 2.5];
+
+          const withDelivery = prices.map((p) => p + 3);   // p is a number automatically
+          const cheap = prices.filter((p) => p < 5);
+
+          console.log(withDelivery, cheap);
+        `),
+        takeaway: "No annotations needed on `p`: TypeScript knows it's a `number` because `prices` is a `number[]`."
+      }
+    ],
+    objects: [
+      {
+        id: "obj-s1",
+        title: "Describing a book",
+        scenario: "The simplest interface: a few required properties.",
+        code: c(`
+          interface Book {
+            title: string;
+            author: string;
+            pages: number;
+          }
+
+          const book: Book = { title: "Dune", author: "Frank Herbert", pages: 412 };
+          console.log(book.title + " by " + book.author + ", " + book.pages + " pages");
+        `),
+        takeaway: "Leave out `pages`, or misspell `author`, and TypeScript points straight at it."
+      },
+      {
+        id: "obj-s2",
+        title: "An optional phone number",
+        scenario: "Some contacts have a phone number, some don't.",
+        code: c(`
+          interface Contact {
+            email: string;
+            phone?: string;
+          }
+
+          function howToReach(contact: Contact): string {
+            return contact.phone ? "Call " + contact.phone : "Email " + contact.email;
+          }
+
+          console.log(howToReach({ email: "jo@x.com" }));
+          console.log(howToReach({ email: "jo@x.com", phone: "07700 900123" }));
+        `),
+        takeaway: "`phone` is `string | undefined`, so the code has to check it before using it."
+      },
+      {
+        id: "obj-s3",
+        title: "Counting votes in a dictionary",
+        scenario: "An object whose keys you don't know in advance.",
+        code: c(`
+          const votes: Record<string, number> = {};
+
+          for (const pick of ["tea", "coffee", "tea"]) {
+            votes[pick] = (votes[pick] ?? 0) + 1;
+          }
+
+          console.log(votes);
+        `),
+        takeaway: "`Record<string, number>` means any string key, always a number value."
+      }
+    ],
+    classes: [
+      {
+        id: "cls-s1",
+        title: "A counter with private state",
+        scenario: "A class that only lets outside code change its count one way.",
+        code: c(`
+          class Counter {
+            private count = 0;
+
+            increment() {
+              this.count++;
+            }
+
+            get value() {
+              return this.count;
+            }
+          }
+
+          const clicks = new Counter();
+          clicks.increment();
+          clicks.increment();
+          console.log(clicks.value);   // 2
+          // clicks.count = 99;        // error: private
+        `),
+        takeaway: "`private` means the only way to change `count` is `increment()`."
+      },
+      {
+        id: "cls-s2",
+        title: "A point with parameter properties",
+        scenario: "The constructor shorthand that declares and assigns properties in one go.",
+        code: c(`
+          class Point {
+            constructor(public x: number, public y: number) {}
+
+            describe() {
+              return "(" + this.x + ", " + this.y + ")";
+            }
+          }
+
+          console.log(new Point(3, 4).describe());
+        `),
+        takeaway: "`public x: number` in the constructor creates `this.x` for you."
+      },
+      {
+        id: "cls-s3",
+        title: "A subclass that overrides a method",
+        scenario: "Basic inheritance: a cat is an animal with its own sound.",
+        code: c(`
+          class Animal {
+            constructor(public petName: string) {}
+            speak() { return this.petName + " makes a sound"; }
+          }
+
+          class Cat extends Animal {
+            speak() { return this.petName + " meows"; }
+          }
+
+          const pets: Animal[] = [new Animal("Rex"), new Cat("Tom")];
+          pets.forEach((pet) => console.log(pet.speak()));
+        `),
+        takeaway: "A `Cat` can go anywhere an `Animal` is expected, and its own `speak()` is the one that runs."
+      }
+    ],
+    generics: [
+      {
+        id: "gen-s1",
+        title: "The last item of any array",
+        scenario: "One function that works for numbers, strings or anything else.",
+        code: c(`
+          function last<T>(items: T[]): T | undefined {
+            return items[items.length - 1];
+          }
+
+          const n = last([1, 2, 3]);       // number | undefined
+          const s = last(["a", "b"]);      // string | undefined
+
+          console.log(n, s);
+        `),
+        takeaway: "`T` is filled in from the argument each time, so the result keeps the right type."
+      },
+      {
+        id: "gen-s2",
+        title: "A labelled box",
+        scenario: "A generic interface: the same shape holding different kinds of contents.",
+        code: c(`
+          interface Box<T> {
+            label: string;
+            contents: T;
+          }
+
+          const shoes: Box<string[]> = { label: "Shoes", contents: ["trainers", "boots"] };
+          const score: Box<number> = { label: "Score", contents: 42 };
+
+          console.log(shoes.contents.length, score.contents + 1);
+        `),
+        takeaway: "`Box<number>` and `Box<string[]>` share one definition but know exactly what they hold."
+      },
+      {
+        id: "gen-s3",
+        title: "The longer of two things",
+        scenario: "A constraint lets a generic function use `.length`.",
+        code: c(`
+          function longer<T extends { length: number }>(a: T, b: T): T {
+            return a.length >= b.length ? a : b;
+          }
+
+          console.log(longer("apple", "fig"));         // strings have length
+          console.log(longer([1, 2], [1, 2, 3]));     // so do arrays
+          // longer(10, 20);                          // error: numbers don't
+        `),
+        takeaway: "`extends { length: number }` accepts anything with a length, and nothing without one."
+      }
+    ],
+    unions: [
+      {
+        id: "un-s1",
+        title: "A string or a number",
+        scenario: "Handling both members of a union with a `typeof` check.",
+        code: c(`
+          function show(value: string | number): string {
+            if (typeof value === "number") {
+              return value.toFixed(1);     // value is a number here
+            }
+            return value.trim();           // and a string here
+          }
+
+          console.log(show(3), show("  hi  "));
+        `),
+        takeaway: "After the `typeof` check, each branch knows exactly which type it has."
+      },
+      {
+        id: "un-s2",
+        title: "Something that might not be found",
+        scenario: "`find` returns `undefined` when nothing matches.",
+        code: c(`
+          const usernames = ["ana", "ben"];
+          const found = usernames.find((u) => u.startsWith("z"));   // string | undefined
+
+          console.log(found ? found.toUpperCase() : "nobody found");
+        `),
+        takeaway: "TypeScript won't let you call `found.toUpperCase()` until you've handled the missing case."
+      },
+      {
+        id: "un-s3",
+        title: "Card or cash",
+        scenario: "A tiny discriminated union: the `method` tag decides which other fields exist.",
+        code: c(`
+          type Payment =
+            | { method: "card"; last4: string }
+            | { method: "cash" };
+
+          function receipt(p: Payment): string {
+            return p.method === "card" ? "Card ending " + p.last4 : "Paid in cash";
+          }
+
+          console.log(receipt({ method: "card", last4: "4242" }));
+          console.log(receipt({ method: "cash" }));
+        `),
+        takeaway: "`last4` is only available after checking `method === \"card\"`."
+      }
+    ],
+    utility: [
+      {
+        id: "util-s1",
+        title: "Partial for an update",
+        scenario: "Changing just one field of a todo.",
+        code: c(`
+          interface Todo {
+            title: string;
+            done: boolean;
+          }
+
+          function update(todo: Todo, changes: Partial<Todo>): Todo {
+            return { ...todo, ...changes };
+          }
+
+          const todo: Todo = { title: "Buy milk", done: false };
+          console.log(update(todo, { done: true }));
+        `),
+        takeaway: "`Partial<Todo>` lets you pass only the fields that change."
+      },
+      {
+        id: "util-s2",
+        title: "Hiding a password with Omit",
+        scenario: "The same person, with and without a sensitive field.",
+        code: c(`
+          interface Person {
+            id: number;
+            fullName: string;
+            password: string;
+          }
+
+          type SafePerson = Omit<Person, "password">;
+
+          const safe: SafePerson = { id: 1, fullName: "Ana Silva" };
+          console.log(safe);
+          // const leak: SafePerson = { id: 1, fullName: "Ana", password: "x" };  // error
+        `),
+        takeaway: "`Omit` builds the new type from the old one, so the two can't drift apart."
+      },
+      {
+        id: "util-s3",
+        title: "keyof for setting names",
+        scenario: "Turning an object's keys into a union of allowed names.",
+        code: c(`
+          interface Settings {
+            theme: string;
+            fontSize: number;
+          }
+
+          type SettingName = keyof Settings;   // "theme" | "fontSize"
+
+          const key: SettingName = "fontSize";
+          console.log(key);
+          // const bad: SettingName = "colour";  // error
+        `),
+        takeaway: "If someone adds a setting, `SettingName` updates automatically."
+      }
+    ],
+    "real-world": [
+      {
+        id: "rw-s1",
+        title: "Reading JSON safely",
+        scenario: "Parsed JSON could be anything, so check it before using it.",
+        code: c(`
+          const text = '{"firstName": "Ana", "age": 31}';
+          const data: unknown = JSON.parse(text);
+
+          if (typeof data === "object" && data !== null &&
+              "firstName" in data && typeof data.firstName === "string") {
+            console.log("Hello, " + data.firstName);
+          } else {
+            console.log("Unexpected data");
+          }
+        `),
+        takeaway: "Typing the result as `unknown` forces the check. Try changing the JSON so the check fails."
+      },
+      {
+        id: "rw-s2",
+        title: "as only makes a promise",
+        scenario: "An assertion tells TypeScript what to believe. It doesn't check anything.",
+        code: c(`
+          const input = JSON.parse('{"count": "5"}') as { count: number };
+
+          // TypeScript believes count is a number. It's actually the string "5":
+          console.log(input.count + 1);   // "51", not 6
+        `),
+        takeaway: "If the assertion is wrong, the bug shows up later, far from its cause."
+      },
+      {
+        id: "rw-s3",
+        title: "satisfies on a small config",
+        scenario: "Checking a config object against a type without losing detail.",
+        code: c(`
+          type Theme = { primary: string; spacing: number };
+
+          const theme = {
+            primary: "#cf5628",
+            spacing: 8,
+          } satisfies Theme;
+
+          console.log(theme.spacing * 2);
+          // Add  extra: true  to the object and run it again.
+        `),
+        takeaway: "`satisfies` catches missing or misspelled fields while keeping the exact values' types."
+      }
+    ]
+  };
+
+  CHAPTERS.forEach(function (chapter) {
+    var simple = (SIMPLE[chapter.id] || []).map(function (ex) { ex.simple = true; return ex; });
+    chapter.examples = simple.concat(chapter.examples);
+  });
+
   // Reference guides live in lessons.js (loaded before this file).
   var GUIDES = window.TSW_LESSONS || {};
 

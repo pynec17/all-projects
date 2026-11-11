@@ -232,9 +232,12 @@ h1 {
   border-radius: 10px;
   padding: 5px 10px;
   background: var(--surface);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .level-name {
+  min-width: 0;
   font-family: var(--font-display);
   font-size: 16px;
   white-space: nowrap;
