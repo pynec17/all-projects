@@ -515,7 +515,7 @@
       if (i === -1) return "";
       var level = levels[i], n = 0;
       for (var j = 0; j <= i; j++) if (levels[j].kind === level.kind) n++;
-      return (level.kind === "lab" ? "Lab " + n : "Chapter " + n) + " · " + level.title;
+      return (level.kind === "lab" ? "Project Lab " + n : "Chapter " + n) + " · " + level.title;
     }
 
     // Tags inside which terms are never linked.
