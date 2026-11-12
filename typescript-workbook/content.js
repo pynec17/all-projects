@@ -102,7 +102,7 @@
             "`unknown[]`"
           ],
           correct: 0,
-          explanation: "Array literals are inferred as arrays of a union of their element types, not as tuples. If you want the tuple `[number, string, boolean]`, annotate it or add `as const`."
+          explanation: "Array literals are inferred as arrays of a union of their element types, not as tuples. If you want a tuple, annotate it yourself as `[number, string, boolean]`. (`as const` also makes a tuple, but a read-only one with the exact values as its types.)"
         }
       ],
       challenges: [
@@ -110,7 +110,7 @@
           id: "basics-c1",
           title: "Fix the type errors",
           difficulty: "Easy",
-          prompt: "This file has a few type mistakes. Fix each one so it compiles cleanly under TypeScript's strict mode, without changing what the code is trying to do.",
+          prompt: "This file has a few type mistakes. Keep every type annotation and the <code>shout</code> function as they are, and fix the <em>values</em> instead: <code>age</code> should be <code>30</code>, <code>isAdmin</code> should be <code>true</code>, <code>tags</code> should hold only strings, and <code>loud</code> should end up as <code>\"HELLO\"</code>. The file must compile cleanly in strict mode.",
           starter:
 'let age: number = "thirty";\n' +
 'let isAdmin: boolean = 1;\n' +
@@ -142,12 +142,12 @@
           id: "basics-c2",
           title: "Narrow the unknown",
           difficulty: "Medium",
-          prompt: "Write a function <code>describe(value: unknown): string</code> that returns:" +
+          prompt: "Write a function <code>describe(value: unknown): string</code> that describes the value it's given. The text depends on its type:" +
             "<ul>" +
-            '<li><code>a string: "hi"</code> for strings (with the actual value quoted)</li>' +
-            "<li><code>a number: 42</code> for numbers</li>" +
-            "<li><code>a boolean: true</code> for booleans</li>" +
-            '<li><code>something else</code> for anything else</li>' +
+            '<li>a string: <code>a string: "…"</code>, with the value in quotes. So <code>describe("hi")</code> returns <code>a string: "hi"</code></li>' +
+            "<li>a number: <code>a number: …</code>. So <code>describe(42)</code> returns <code>a number: 42</code></li>" +
+            "<li>a boolean: <code>a boolean: …</code>. So <code>describe(true)</code> returns <code>a boolean: true</code></li>" +
+            '<li>anything else: <code>something else</code></li>' +
             "</ul>" +
             "You'll need to narrow <code>value</code> with <code>typeof</code> checks before you can use it as a string, number, or boolean.",
           starter:
@@ -231,9 +231,10 @@
 '}\n' +
 'totalAny({ total: 10 }); // runtime crash: Cannot read properties of undefined\n\n' +
 'function totalUnknown(cart: unknown) {\n' +
-'  if (typeof cart === "object" && cart !== null && "items" in cart) {\n' +
-'    // TypeScript makes you check the shape before you can touch it\n' +
+'  if (typeof cart === "object" && cart !== null && "items" in cart && Array.isArray(cart.items)) {\n' +
+'    return cart.items.length; // only allowed once you\'ve checked the shape\n' +
 '  }\n' +
+'  return 0;\n' +
 '}',
           takeaway: "`any` is a trapdoor out of the type system — TypeScript stops checking that value entirely, so mistakes only show up at runtime. `unknown` keeps the safety on: you're forced to narrow before you can use it. Prefer `unknown` for values you don't control yet (API responses, JSON.parse results, user input)."
         },
@@ -259,7 +260,7 @@
     {
       id: "functions",
       title: "Functions",
-      blurb: "Typing parameters and return values, optional and default parameters, rest parameters, and why TypeScript insists you annotate what you take in.",
+      blurb: "Typing parameters and return values, optional and default parameters, rest parameters, and why strict mode makes you annotate what a function takes in.",
       theory: [
         {
           id: "fn-1",
@@ -292,7 +293,7 @@
           type: "mc",
           prompt: "What's the difference between `name?: string` and `name: string | undefined` as a parameter type?",
           options: [
-            "Similar for the value's type, but `name?` also makes the argument itself optional to omit at the call site.",
+            "The value's type is much the same, but only `name?` lets callers leave the argument out altogether.",
             "They are exactly identical in every way, including at the call site.",
             "`name?` means the parameter must be a string.",
             "`string | undefined` is not valid TypeScript syntax."
@@ -459,7 +460,7 @@
 '  return fn();\n' +
 '}\n\n' +
 'const user = await retry(() => fetchUser(id), 3);',
-          takeaway: "`fn: () => Promise<T>` says 'give me a no-argument function that resolves to some type T', and `retry` hands that same T back out. The caller gets a fully typed `user`, not `any`, even though `retry` has no idea in advance what it's retrying."
+          takeaway: "`T` is a placeholder for \"whatever type `fn` resolves to\" (generics get their own chapter later). `fn: () => Promise<T>` means \"a function with no arguments that returns a promise of T\", and `retry` returns that same T. So the caller gets a fully typed `user`, not `any`, even though `retry` has no idea in advance what it's retrying."
         },
         {
           id: "fn-e2",
@@ -570,7 +571,7 @@
             "Types are checked at runtime as well as compile time."
           ],
           correct: 0,
-          explanation: "If an object has every property a type requires (with the right types), it satisfies that type — no `implements` or shared name needed. This is sometimes called 'duck typing, checked at compile time'."
+          explanation: "If an object has every property a type requires (with the right types), it satisfies that type. It doesn't have to be declared as that type or share its name. This is sometimes called 'duck typing, checked at compile time'."
         },
         {
           id: "obj-8",
@@ -585,7 +586,7 @@
           id: "obj-c1",
           title: "Model a User",
           difficulty: "Easy",
-          prompt: "Define an interface <code>User</code> with <code>id</code> (number), <code>name</code> (string), <code>email</code> (string), and an optional <code>age</code> (number). Then write <code>describeUser(user: User): string</code> that returns <code>\"Name (email)\"</code>, or <code>\"Name, age (email)\"</code> when age is provided.",
+          prompt: "Define an interface <code>User</code> with <code>id</code> (number), <code>name</code> (string), <code>email</code> (string), and an optional <code>age</code> (number). Then write <code>describeUser(user: User): string</code> that returns the name followed by the email in brackets, like <code>\"Ada (a@x.com)\"</code>. When age is provided, put it after the name with a comma, like <code>\"Bo, 30 (b@x.com)\"</code>.",
           starter:
 '// TODO: define the User interface\n\n' +
 'function describeUser(user: User): string {\n' +
@@ -697,7 +698,7 @@
 'type PointAlias = { x: number; y: number };\n\n' +
 'interface Point { z?: number; } // merges in, Point now has an optional z\n' +
 '// type PointAlias { z?: number } // — error, type aliases can\'t merge',
-          takeaway: "Interfaces can be extended and merged, which makes them the common default for public object shapes (especially ones a library's users might augment). `type` aliases are required once you need a union, tuple, or mapped type — interfaces can't express those directly."
+          takeaway: "Interfaces can be extended and merged, which makes them the common default for public object shapes (especially ones a library's users might want to add properties to). `type` aliases are needed once you want a union or a tuple (unions are chapter 4), because interfaces can't express those."
         },
         {
           id: "obj-e2",
@@ -772,7 +773,7 @@
             "It makes the constructor itself private."
           ],
           correct: 0,
-          explanation: "This is TypeScript's 'parameter property' shorthand. Without it you'd write `name: string` in the constructor signature plus `this.name = name;` in the body yourself."
+          explanation: "This is TypeScript's 'parameter property' shorthand. Without it you'd declare `private name: string;` on the class, take a plain `name: string` parameter in the constructor, and write `this.name = name;` in the body yourself."
         },
         {
           id: "cls-5",
@@ -1171,7 +1172,8 @@
             "<li><code>pop(): T | undefined</code> &mdash; removes and returns the top item</li>" +
             "<li><code>peek(): T | undefined</code> &mdash; returns the top item without removing it</li>" +
             "<li><code>size(): number</code></li>" +
-            "</ul>",
+            "</ul>" +
+            "A stack is last in, first out: the top item is the one pushed most recently. <code>pop()</code> and <code>peek()</code> return <code>undefined</code> when the stack is empty.",
           starter:
 'class Stack {\n' +
 '  // TODO: make this generic (Stack<T>) with push, pop, peek and size\n' +
@@ -1237,7 +1239,8 @@
 '  return res.json();\n' +
 '}\n\n' +
 'const result = await getUser(1);\n' +
-'result.data.name; // typed as string, from User',
+'result.data.name; // typed as string, because we told TypeScript data is a User\n' +
+'                  // (nothing checks the server really sends one: see chapter 8)',
           takeaway: "`ApiResponse<T>` is written once and reused for every endpoint — `ApiResponse<User>`, `ApiResponse<Invoice[]>`, and so on — instead of duplicating the `{ data, error }` envelope shape for each one."
         },
         {
@@ -1374,7 +1377,7 @@
           id: "un-c1",
           title: "Narrow a union with typeof",
           difficulty: "Easy",
-          prompt: 'Write <code>formatId(id: string | number): string</code> that returns <code>#id</code> if id is a number, or the uppercased string if it\'s a string.',
+          prompt: 'Write <code>formatId(id: string | number): string</code>. If <code>id</code> is a number, return it with a <code>#</code> in front (so <code>7</code> becomes <code>"#7"</code>). If it\'s a string, return it in uppercase (so <code>"abc"</code> becomes <code>"ABC"</code>).',
           starter:
 'function formatId(id: string | number): string {\n' +
 '  // TODO\n' +
@@ -1401,7 +1404,7 @@
           id: "un-c2",
           title: "Discriminated union + switch",
           difficulty: "Medium",
-          prompt: 'Define a discriminated union <code>Shape</code> of <code>{ kind: "circle"; radius: number }</code> and <code>{ kind: "square"; side: number }</code>. Write <code>area(shape: Shape): number</code> using a switch on <code>shape.kind</code>.',
+          prompt: 'Define a discriminated union <code>Shape</code> of <code>{ kind: "circle"; radius: number }</code> and <code>{ kind: "square"; side: number }</code>. Write <code>area(shape: Shape): number</code> using a switch on <code>shape.kind</code>. A circle\'s area is &pi; &times; radius &times; radius (use <code>Math.PI</code>), and a square\'s is side &times; side.',
           starter:
 '// TODO: define the Shape union\n\n' +
 'function area(shape: Shape): number {\n' +
@@ -1436,7 +1439,7 @@
           id: "un-c3",
           title: "Exhaustiveness checking",
           difficulty: "Medium",
-          prompt: "The <code>default</code> branch assigns <code>e</code> to a <code>never</code> variable. Right now that's a compile error, because two event types aren't handled yet. Add the missing cases so the function returns <code>pressed {key}</code> for keypresses and <code>scrolled {delta}</code> for scrolls.",
+          prompt: "The <code>default</code> branch assigns <code>e</code> to a <code>never</code> variable. Right now that's a compile error, because two event types aren't handled yet. Add the missing cases. A keypress should return <code>pressed</code>, a space, then the key (for example <code>\"pressed Enter\"</code>). A scroll should return <code>scrolled</code>, a space, then the delta (for example <code>\"scrolled 120\"</code>).",
           starter:
 'type AppEvent =\n' +
 '  | { type: "click"; x: number; y: number }\n' +
@@ -1490,7 +1493,7 @@
         {
           id: "un-e1",
           title: "Modeling impossible states away",
-          scenario: "A single object with optional fields can represent nonsense states (loading AND has data AND has an error, all at once). A discriminated union can't.",
+          scenario: "A single object with optional fields can represent nonsense states (loading AND has data AND has an error, all at once). A discriminated union can't. (The `<T>` is a placeholder for the type of the data; generics get their own chapter later.)",
           code:
 'type RequestState<T> =\n' +
 '  | { status: "idle" }\n' +
@@ -1499,7 +1502,7 @@
 '  | { status: "error"; error: string };\n\n' +
 'function render(state: RequestState<User>) {\n' +
 '  if (state.status === "success") {\n' +
-'    return state.data.name; // only reachable, and only valid, here\n' +
+'    return state.data.name; // data only exists on this variant, so it\'s safe to read here\n' +
 '  }\n' +
 '}',
           takeaway: "This is one of the most common real-world TypeScript patterns (seen all over React and Redux-style state): instead of `{ loading: boolean; data?: T; error?: string }` — where all three could technically be true together — each state is its own variant, and TypeScript only lets you read `.data` where it's actually guaranteed to exist."
@@ -1551,7 +1554,7 @@
             "Only works on classes."
           ],
           correct: 0,
-          explanation: "`typeof` in a type position lets you derive a type from an existing value — e.g. `type Config = typeof defaultConfig;` — so the implementation stays the single source of truth."
+          explanation: "Where TypeScript expects a type, `typeof` derives one from an existing value, as in `type Config = typeof defaultConfig;`. The value stays the single source of truth."
         },
         {
           id: "util-3",
@@ -1590,7 +1593,7 @@
             "An array of records from a database."
           ],
           correct: 0,
-          explanation: "`Record<K, V>` is a shorthand for an object/dictionary type — equivalent to writing an index signature `{ [key: K]: V }`."
+          explanation: "`Record<K, V>` is shorthand for an object type whose keys are K and whose values are V. With `string` keys, `Record<string, number>` behaves like the index signature `{ [key: string]: number }` from the Objects chapter."
         },
         {
           id: "util-6",
@@ -1753,7 +1756,7 @@
 '  return { id: crypto.randomUUID(), name, createdAt: new Date() };\n' +
 '}\n\n' +
 'type NewUser = ReturnType<typeof createUser>;\n' +
-'// NewUser is derived automatically: { id: string; name: string; createdAt: Date }',
+'// NewUser is derived automatically: roughly { id: string; name: string; createdAt: Date }',
           takeaway: "If `createUser`'s implementation changes (a field is added or renamed), `NewUser` updates automatically — there's no second definition that can drift out of sync with the real one."
         },
         {
@@ -1824,7 +1827,7 @@
           type: "mc",
           prompt: 'What’s the benefit of `import type { User } from "./user"`, compared to a normal import?',
           options: [
-            "It signals the import is only used for types and is erased completely at compile time — it never affects the emitted JavaScript or causes an actual module load at runtime.",
+            "It marks the import as type-only, so it's guaranteed to be erased when compiled and can never cause a module to load at runtime.",
             "It makes User a runtime value.",
             "It's required for every import in TypeScript.",
             "It only works with default exports."
@@ -1856,7 +1859,7 @@
             "Validates the object at runtime."
           ],
           correct: 0,
-          explanation: "With `const config: Config = ...`, the variable's type becomes `Config` and you lose the specifics (e.g. that `port` is exactly `3000`). `satisfies` gives you the check without widening, so you get both safety and precise types."
+          explanation: "With `const config: Config = ...`, the variable takes the type `Config` and forgets what you actually wrote. If `Config` says `port` is `string | number`, TypeScript treats `config.port` as that union even though you gave it a number. `satisfies` checks the value against `Config` but keeps the value's own inferred type, so `config.port` stays a `number`."
         },
         {
           id: "rw-7",
@@ -1951,7 +1954,7 @@
           id: "rw-c2",
           title: "Replace the anys with generics",
           difficulty: "Hard",
-          prompt: "This <code>groupBy</code> helper works at runtime, but it's typed with <code>any</code> everywhere, so callers get no help. Rewrite its signature with generics: <code>T</code> for the item type and <code>K extends string</code> for the key that <code>getKey</code> returns. Return <code>Partial&lt;Record&lt;K, T[]&gt;&gt;</code> &mdash; <code>Partial</code> because a group might have no items.",
+          prompt: "This <code>groupBy</code> helper works at runtime, but it's typed with <code>any</code> everywhere, so callers get no help. Rewrite it with generics: <code>T</code> for the item type and <code>K extends string</code> for the key that <code>getKey</code> returns (<code>K extends string</code> means K must be a string type, such as a union of string literals like <code>\"paid\" | \"unpaid\"</code>). Return <code>Partial&lt;Record&lt;K, T[]&gt;&gt;</code>, with <code>Partial</code> because a group might have no items. You'll need to adjust the body too, so no <code>any</code> is left.",
           starter:
 'interface Order {\n' +
 '  id: number;\n' +
@@ -2022,12 +2025,12 @@
 '    "noUncheckedIndexedAccess": true\n' +
 '  }\n' +
 '}',
-          takeaway: "`strict` turns on the core safety net. `skipLibCheck` skips type-checking inside third-party `.d.ts` files (faster builds, fewer unrelated errors). `noUncheckedIndexedAccess` is an extra, very useful flag that makes array/object index access include `| undefined`, catching a whole class of out-of-bounds bugs."
+          takeaway: "`target` is the JavaScript version to emit and `module` is the import/export style (both covered in Lab 2). `strict` turns on the core safety checks. `skipLibCheck` skips type-checking `.d.ts` files, which means faster builds and fewer errors from libraries you can't fix. `esModuleInterop` makes importing older CommonJS packages behave the way you'd expect. `noUncheckedIndexedAccess` is an extra, very useful flag that makes array/object index access include `| undefined`, catching a whole class of out-of-bounds bugs."
         },
         {
           id: "rw-e2",
           title: "Fetch, then validate before trusting",
-          scenario: "Combining the narrowing from the Unions chapter with a real network call.",
+          scenario: "Combining the narrowing from the Unions chapter with a real network call. `isUser` is a type guard you write yourself: a function that checks the data and tells TypeScript it's a user.",
           code:
 'async function getUser(id: number): Promise<{ id: number; name: string }> {\n' +
 '  const res = await fetch(`/api/users/${id}`);\n' +
@@ -2109,7 +2112,7 @@
           kind: "build",
           title: "Turn on strict mode",
           difficulty: "Medium",
-          prompt: "This project was started with <code>\"strict\": false</code>. Turn strict mode on in <code>tsconfig.json</code>, press Build, then fix the two errors it uncovers. (Hint: <code>findUser</code> can return <code>undefined</code>.)",
+          prompt: "This project was started with <code>\"strict\": false</code>. Turn strict mode on in <code>tsconfig.json</code>, press Build, then fix the two errors it uncovers. (Hint: <code>findUser</code> has a parameter with no type, and it can also return <code>undefined</code>.)",
           openFile: "/tsconfig.json",
           files: {
             "/tsconfig.json":
@@ -2220,14 +2223,14 @@
       id: "lab-2",
       after: "generics",
       title: "tsconfig deep-dive",
-      blurb: "The three compiler options that cause the most real-world confusion: module, target, and the bug-catching noUncheckedIndexedAccess.",
+      blurb: "Three compiler options worth understanding: `module` (which import/export style is emitted), `target` (which JavaScript version is emitted) and `noUncheckedIndexedAccess` (which catches out-of-bounds lookups).",
       tasks: [
         {
           id: "lab2-t1",
           kind: "build",
           title: "Match the module system",
           difficulty: "Hard",
-          prompt: "<code>package.json</code> says <code>\"type\": \"module\"</code>, so Node loads <code>dist/*.js</code> as ES modules. But this config emits CommonJS (<code>require</code> and <code>exports</code>), which crashes with <em>require is not defined in ES module scope</em>. Make the output use <code>import</code>/<code>export</code>. Node's ES modules also need the full file extension on relative imports, so the emitted import must point at <code>./greet.js</code>.",
+          prompt: "<code>package.json</code> says <code>\"type\": \"module\"</code>, so Node loads <code>dist/*.js</code> as ES modules. But this config emits CommonJS (<code>require</code> and <code>exports</code>), which crashes with <em>require is not defined in ES module scope</em>. Change <code>tsconfig.json</code> so the output uses <code>import</code>/<code>export</code>. Node's ES modules also need the full file extension on relative imports, so you'll need to change the import in <code>src/index.ts</code> too: the emitted file must import <code>./greet.js</code>.",
           openFile: "/tsconfig.json",
           readonly: ["/package.json"],
           files: {
@@ -2271,7 +2274,7 @@
           },
           checks: [
             { name: "dist/index.js uses import, not require", test: function (ctx) { var js = ctx.outputs["/dist/index.js"] || ""; return /\bimport\b/.test(js) && js.indexOf("require(") === -1; } },
-            { name: "dist/greet.js uses export, not exports.", test: function (ctx) { var js = ctx.outputs["/dist/greet.js"] || ""; return /\bexport\b/.test(js) && js.indexOf("exports.") === -1; } },
+            { name: "dist/greet.js uses export, not CommonJS exports", test: function (ctx) { var js = ctx.outputs["/dist/greet.js"] || ""; return /\bexport\b/.test(js) && js.indexOf("exports.") === -1; } },
             { name: "the import points at ./greet.js", test: function (ctx) { return /from\s+["']\.\/greet\.js["']/.test(ctx.outputs["/dist/index.js"] || ""); } },
             { name: "the project builds with no errors", test: function (ctx) { return ctx.errorCount === 0; } }
           ]
@@ -2360,7 +2363,7 @@
     {
       id: "lab-3",
       after: "real-world",
-      title: "Real-world project",
+      title: "Real project problems",
       blurb: "The problems you hit in real codebases: an npm package with no types, imports that vanish from the output, and path aliases.",
       tasks: [
         {
@@ -2681,7 +2684,7 @@
           console.log(clicks.value);   // 2
           // clicks.count = 99;        // error: private
         `),
-        takeaway: "`private` means the only way to change `count` is `increment()`."
+        takeaway: "`private` makes TypeScript reject any outside code that touches `count`, so `increment()` is the only way to change it. It's a compile-time check only; use `#count` if you need privacy at runtime too."
       },
       {
         id: "cls-s2",
@@ -2897,7 +2900,7 @@
       {
         id: "rw-s2",
         title: "as only makes a promise",
-        scenario: "An assertion tells TypeScript what to believe. It doesn't check anything.",
+        scenario: "An assertion tells TypeScript what to believe. Nothing checks it while the code runs.",
         code: c(`
           const input = JSON.parse('{"count": "5"}') as { count: number };
 
@@ -2921,7 +2924,7 @@
           console.log(theme.spacing * 2);
           // Add  extra: true  to the object and run it again.
         `),
-        takeaway: "`satisfies` catches missing or misspelled fields while keeping the exact values' types."
+        takeaway: "`satisfies` checks the object against `Theme`, catching missing or extra fields, while each value keeps its own precise type (so `spacing` stays a `number`)."
       }
     ]
   };

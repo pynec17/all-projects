@@ -130,7 +130,7 @@
               ids.push(7);
             `)
           },
-          { tip: "A good rule: let TypeScript infer local variables, and annotate function parameters (it can't infer those) and anything other files depend on." }
+          { tip: "A good rule: let TypeScript infer local variables, and annotate the parameters of functions you declare (TypeScript has nothing to infer them from) and anything other files depend on." }
         ]
       },
       {
@@ -214,7 +214,7 @@
             `),
             run: true
           },
-          "Literal types explain a difference between `let` and `const`. A `const` can never change, so TypeScript infers the exact literal. A `let` could be reassigned, so its type **widens** to the general one:",
+          "Literal types explain a difference between `let` and `const`. A `const` can't be reassigned, so for a simple value like a string TypeScript infers the exact literal. A `let` could be reassigned, so its type **widens** to the general one:",
           {
             code: c(`
               const mode = "dark";   // type: "dark"
@@ -321,7 +321,7 @@
       {
         title: "Parameters and return types",
         blocks: [
-          "Parameters are the one place TypeScript can't infer a type, because it can't see who will call the function. So you annotate them:",
+          "When you declare a function, TypeScript can't infer its parameter types, because it can't see who will call it. So you annotate them. (Callbacks are the exception, as you'll see further down.)",
           {
             code: c(`
               function total(price: number, quantity: number): number {
@@ -368,7 +368,7 @@
             `),
             run: true
           },
-          "Optional and default parameters must come after the required ones.",
+          "Optional (`?`) parameters must come after the required ones. A parameter with a default *can* come first, but then callers have to pass `undefined` to use the default, so it's usually best to put it last too.",
           { tip: "`person?: string` lets callers leave the argument out. `person: string | undefined` makes them pass *something*, even if it's `undefined`. The `?` form is what you usually want." }
         ]
       },
@@ -410,7 +410,7 @@
       {
         title: "Arrow functions, callbacks and function types",
         blocks: [
-          "Arrow functions infer their whole type from their parameters and body: `const add = (a: number, b: number) => a + b` has the type `(a: number, b: number) => number`.",
+          "Once their parameters are annotated, arrow functions infer the return type from the body: `const add = (a: number, b: number) => a + b` has the type `(a: number, b: number) => number`.",
           "To describe a function you'll pass around, like a callback, write a **function type**: the parameters, then `=>`, then the return type.",
           {
             code: c(`
@@ -456,7 +456,7 @@
     ],
     gotchas: [
       { text: "Forgetting that optional parameters can be `undefined`.", bad: "function greet(p?: string) {\n  return p.toUpperCase();\n}", good: 'function greet(p?: string) {\n  return p?.toUpperCase() ?? "THERE";\n}' },
-      { text: "Putting an optional parameter before a required one. `function f(a?: string, b: number)` is an error; reorder them, or give `a` a default." },
+      { text: "Putting an optional parameter before a required one. `function f(a?: string, b: number)` is an error; reorder them so the optional one comes last." },
       { text: "Typing callbacks as `Function` or `any`. Write the real shape, like `(id: number) => void`, so the functions people pass in get checked." },
       { text: "Annotating callback parameters that are already contextually typed. `nums.map((n: number) => …)` works, but `n` was already a number." }
     ]
@@ -560,7 +560,7 @@
             `),
             run: true
           },
-          { warn: "`readonly` is checked at compile time only, and it's shallow. A `readonly items: string[]` can't be replaced, but you can still `push` to it. Write `readonly string[]` to block that too." }
+          { warn: "`readonly` is checked at compile time only, and it's shallow. A `readonly items: string[]` property can't be pointed at a different array, but you can still `push` to the array. Write `readonly items: readonly string[]` to block that too." }
         ]
       },
       {
@@ -663,7 +663,7 @@
           {
             list: [
               "A `type` can name *any* type, including unions, tuples and function types. An interface can only describe object shapes.",
-              "An `interface` can be extended with `extends` and merged by declaring it again.",
+              "An `interface` can be extended with `extends` and merged by declaring it again. A `type` can't be merged; you combine types with `&` instead (chapter 4).",
               "Common convention: `interface` for object shapes, `type` for everything else. Whichever you choose, be consistent."
             ]
           }
@@ -690,7 +690,7 @@
       ['"swim" in animal', "narrows by property"],
       ["x instanceof Date", "narrows class instances"],
       ["Array.isArray(x)", "narrows arrays"],
-      ["if (x)  /  x !== undefined", "removes null/undefined"],
+      ["if (x)  /  x !== undefined", "if (x) rules out null and undefined; !== undefined rules out just undefined"],
       ["x?.y  /  x ?? fallback", "optional chaining / default"],
       ['{ kind: "circle"; … } | …', "discriminated union"],
       ["(x): x is Cat", "custom type guard"],
@@ -835,7 +835,7 @@
         title: "Exhaustiveness checks",
         blocks: [
           "What happens when someone adds a new variant and forgets to handle it? An **exhaustiveness check** turns that into a compile error.",
-          "In a `switch`'s `default` branch, every variant has already been handled, so the value's type is `never`. Assign it to a `never` variable: if a new variant ever reaches that line, it won't fit, and the build fails.",
+          "If every variant has its own `case`, nothing is left over for the `default` branch, so the value there has the type `never`. Assign it to a `never` variable: while every case is covered that's fine, but if one is ever missing, the leftover value won't fit and the build fails. In the example below, `\"archived\"` has no `case`, so you see exactly that error.",
           {
             code: c(`
               type PostState = "draft" | "published" | "archived";
@@ -920,7 +920,7 @@
   // ==================================================================
   G.classes = {
     minutes: 8,
-    summary: "TypeScript adds typed properties and access control to JavaScript classes. If you've used Java or C# it will look familiar, with one twist: it's all checked at compile time and erased at runtime.",
+    summary: "TypeScript adds typed properties and access control to JavaScript classes. If you've used Java or C# it will look familiar, with one twist: the types and access rules are checked at compile time, then erased. The class itself stays as ordinary JavaScript.",
     glance: [
       ["count = 0;  label: string;", "typed properties (must be initialised under strict)"],
       ["public / protected / private", "access: anywhere / class + subclasses / class only"],
@@ -1029,7 +1029,7 @@
                 }
               }
 
-              // Shorthand: exactly the same
+              // Shorthand: does exactly the same (use one version or the other, not both)
               class OrderService {
                 constructor(private db: Database) {}
               }
@@ -1224,7 +1224,7 @@
             `),
             run: true
           },
-          "`T extends { id: number }` means \"T can be any type, as long as it has a numeric `id`\". The result is still the caller's full type, so `found?.email` works. A plain `{ id: number }` parameter would have lost the `email` property."
+          "`T extends { id: number }` means \"T can be any type, as long as it has a numeric `id`\". The returned item keeps the caller's full type, so `found?.email` works. If the parameter were typed as a plain `{ id: number }[]` instead, the result would only be known as `{ id: number }`, and `email` would be an error."
         ]
       },
       {
@@ -1319,10 +1319,10 @@
     summary: "Once you have a type, you often need variations of it: the same user with every field optional for an update, or without the password. Instead of copying and editing, TypeScript lets you compute new types from existing ones, so they stay in sync.",
     glance: [
       ["keyof T", 'union of T\'s keys, e.g. "id" | "email"'],
-      ["typeof value", "the type of a value (in a type position)"],
+      ["typeof value", "the type of a value (where a type is expected)"],
       ["ReturnType<typeof fn>", "a function's return type"],
       ["Partial<T> / Required<T>", "all properties optional / required"],
-      ["Readonly<T>", "all properties read-only (shallow)"],
+      ["Readonly<T>", "all properties read-only (top level only)"],
       ['Pick<T, "a" | "b">', "keep only these keys"],
       ['Omit<T, "a">', "drop these keys"],
       ["Record<K, V>", "object with keys K and values V"],
@@ -1335,7 +1335,7 @@
       {
         title: "Types from values: typeof and keyof",
         blocks: [
-          "In a type position, `typeof` takes the type of an existing variable. That's useful when a value is the source of truth and you don't want to write its type out twice. (In ordinary code, `typeof x` is still JavaScript's runtime operator returning a string like `\"object\"`.)",
+          "Where TypeScript expects a type (after a `:`, or on the right of `type X =`), `typeof` gives you the type of an existing variable. That's useful when a value is the source of truth and you don't want to write its type out twice. (In ordinary code, `typeof x` is still JavaScript's runtime operator, returning a string like `\"object\"`.)",
           "`keyof` turns an object type's keys into a union of string literals. Combined, they describe \"one of this object's keys\":",
           {
             code: c(`
@@ -1517,7 +1517,7 @@
       ['"strict": true', "turn on all the safety checks"],
       ["const data: unknown = await res.json()", "treat outside data as unknown"],
       ["(v: unknown): v is User", "validate it with a type guard"],
-      ["value as User", "assertion: no check at all"],
+      ["value as User", "assertion: no runtime check"],
       ["{ … } satisfies Config", "checked, keeps the precise type"],
       ["import type { User } from …", "type-only import, always erased from the output"],
       ["npm i -D @types/x", "community types for a JS package"],
@@ -1527,9 +1527,9 @@
       {
         title: "Where type checking happens",
         blocks: [
-          "A typical project has three pieces: your `.ts`/`.tsx` source (usually in `src/`), a `tsconfig.json` with the compiler settings, and a build tool that turns TypeScript into JavaScript. That tool might be `tsc` itself, or a bundler like Vite, esbuild, webpack or Next.js.",
+          "A typical project has three pieces: your `.ts`/`.tsx` source (usually in `src/`), a `tsconfig.json` with the compiler settings, and a build tool that turns TypeScript into JavaScript. That tool might be `tsc` itself, or a **bundler** (a tool that combines your files into the ones you deploy) like Vite, esbuild or webpack.",
           "Here's the part that surprises people: most bundlers **strip types without checking them**, file by file, because it's fast. Your app will build and run even with type errors in it.",
-          "So checking happens in two other places: your **editor**, which runs TypeScript as you type, and a separate `tsc --noEmit` step (check only, write no files) in your scripts and CI:",
+          "So checking happens in two other places: your **editor**, which runs TypeScript as you type, and a separate `tsc --noEmit` step (check only, write no files) in your scripts and in CI (continuous integration: the automated checks that run on every push):",
           {
             code: c(`
               // package.json
@@ -1554,13 +1554,13 @@
                   "module": "ESNext",     // import/export style to emit
                   "strict": true,         // noImplicitAny, strictNullChecks, …
                   "outDir": "dist",       // where emitted files go
-                  "skipLibCheck": true    // don't re-check libraries' .d.ts files
+                  "skipLibCheck": true    // trust libraries' type files (.d.ts), don't re-check them
                 },
                 "include": ["src"]        // which files belong to the project
               }
             `)
           },
-          "`strict` is the important one; turn it on for every new project. `skipLibCheck` is a common speed-up: it trusts the type files that come with your dependencies instead of re-checking them. The three Project Labs go deeper into these settings, using the real compiler."
+          "`strict` is the important one; turn it on for every new project. `skipLibCheck` is a common speed-up: it trusts the type files that come with your dependencies instead of re-checking them. Labs 1 and 2 covered most of these settings with the real compiler, and Lab 3 comes next."
         ]
       },
       {
@@ -1603,7 +1603,7 @@
       {
         title: "as vs satisfies",
         blocks: [
-          "A **type assertion**, `value as User`, tells the compiler \"trust me, it's a User\". It performs **no check at all**, at compile time or at runtime. If you're wrong, you find out later, as a crash somewhere else.",
+          "A **type assertion**, `value as User`, tells the compiler \"trust me, it's a User\". There's **no runtime check**, and the compile-time check is weak: it only stops you asserting between types that clearly can't overlap (which is why the example below needs `as unknown as`). If you're wrong, you find out later, as a crash somewhere else.",
           "**`satisfies`** is the safe alternative for values you write yourself. It checks the value against a type, but keeps the more precise type TypeScript inferred:",
           {
             code: c(`
@@ -1808,7 +1808,7 @@
       ['"module": "ESNext"', "keep import / export"],
       ['"module": "NodeNext"', "follow Node's rules (package.json \"type\")"],
       ['import "./greet.js"', "Node ESM needs the extension, even from .ts"],
-      ['"noUncheckedIndexedAccess": true', "arr[i] and obj[key] include | undefined"]
+      ['"noUncheckedIndexedAccess": true', "arr[i] and dictionary lookups include | undefined"]
     ],
     sections: [
       {
@@ -1833,11 +1833,11 @@
               "ES2015: arrow functions, `let`/`const`, classes, template literals",
               "ES2017: `async` / `await`",
               "ES2020: `??` and `?.`",
-              "ES2022: class fields with `#private`, top-level `await`"
+              "ES2022: class fields with `#private`"
             ]
           },
           "So with `\"target\": \"ES2017\"`, `??` and `?.` get rewritten, while arrow functions and template literals are left alone.",
-          "`target` only rewrites **syntax**. It doesn't add missing built-in functions, like `Array.prototype.at` in an old browser; that's what the `lib` setting describes and what polyfills provide.",
+          "`target` only rewrites **syntax**. It doesn't add missing built-in functions, like `Array.prototype.at` in an old browser. The `lib` setting only tells the type checker which built-ins exist; a **polyfill** (extra code that defines the missing function) is what actually provides one at runtime.",
           { real: "For Node 18+ or current browsers, `ES2022` is a sensible target. If a bundler handles downlevelling for you, the tsconfig target matters less." }
         ]
       },
@@ -1945,7 +1945,7 @@
               import "./polyfills";                   // kept: side-effect import
             `)
           },
-          "That matters when a module has **side effects** (it runs code when imported), and for tools like esbuild that compile each file on its own and can't tell whether an import was type-only. Marking type imports with `import type` removes the guesswork.",
+          "That matters when a module has **side effects** (it runs code when imported), and for tools like esbuild that compile each file on its own and can't always tell whether an import was type-only. Marking type imports with `import type` removes the guesswork.",
           "`\"verbatimModuleSyntax\": true` makes the rule simple: imports marked `type` are removed, and everything else is kept exactly as written. It's the recommended setting for new projects."
         ]
       },
@@ -1989,7 +1989,7 @@
     ],
     gotchas: [
       { text: "Adding `paths` and expecting it to work at runtime. The bundler or runtime needs the same alias." },
-      { text: "Importing a type with a plain `import` in a project built by esbuild or with `isolatedModules`. Use `import type` so the import is guaranteed to be removed." }
+      { text: "Using a plain `import` for something that's only a type. Tools that compile one file at a time can't always tell, so use `import type` to guarantee the import is removed." }
     ]
   };
 

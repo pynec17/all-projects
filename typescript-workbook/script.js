@@ -241,7 +241,7 @@
   }
 
   function longName(level) {
-    return (level.kind === "lab" ? "Lab " + labNumber(level) : "Chapter " + chapterNumber(level)) + " · " + level.title;
+    return (level.kind === "lab" ? "Project Lab " + labNumber(level) : "Chapter " + chapterNumber(level)) + " · " + level.title;
   }
 
   function renderHome() {
@@ -262,14 +262,14 @@
       ["Guide", "Read the explanation: the key syntax at a glance, then each idea with examples you can edit and run. Hover over or tap underlined terms for a quick definition."],
       ["Examples", "Short, simple examples first, then patterns you'll meet in real codebases."],
       ["Quiz", "One question at a time, to check the ideas have stuck. +10 XP each."],
-      ["Challenges", "Write real TypeScript in the browser. It's type-checked by the actual compiler, then tested. +20 to 50 XP."]
+      ["Challenges", "Write real TypeScript in the browser. Your code is type-checked by the actual compiler, then run against tests. +20 to 50 XP."]
     ];
 
     var wrap = el("div", "home");
     wrap.innerHTML =
       '<div class="crumb">TypeScript Workbook</div>' +
       "<h1>Learn TypeScript, building on the JavaScript you know</h1>" +
-      '<p class="home-lede">This workbook teaches TypeScript from the beginning, for people who already write JavaScript. Each chapter explains one part of the language, shows it in action, then checks you\'ve got it with a quiz and code challenges, compiled by the real TypeScript compiler right here in the browser.</p>' +
+      '<p class="home-lede">This workbook teaches TypeScript from the beginning, for people who already write JavaScript. Each chapter explains one part of the language, shows it in action, then checks you\'ve got it with a quiz and code challenges. The challenges are checked by the real TypeScript compiler, running right here in your browser.</p>' +
 
       '<div class="home-continue">' +
       '<div class="home-continue-text">' +
@@ -292,14 +292,14 @@
       }).join("") +
       "</ol>" +
       '<p class="home-note"><span class="home-lab-tag">Lab</span> After chapters ' + labAfter.slice(0, -1).join(", ") + " and " + labAfter[labAfter.length - 1] +
-      ", a <strong>Project Lab</strong> gives you a small multi-file project in an editor: change the tsconfig, fix what the compiler finds, and see exactly what it emits.</p>" +
+      ", a <strong>Project Lab</strong> gives you a small multi-file project in an editor. You'll change the project's <code>tsconfig.json</code> settings, fix the errors the compiler reports, and look at the JavaScript it produces.</p>" +
 
       '<h2 class="home-h2">Contents</h2>' +
       '<div class="home-contents" id="home-contents"></div>' +
 
       '<h2 class="home-h2">Also here</h2>' +
       '<div class="home-extras">' +
-      '<a class="home-extra" href="#glossary"><strong>Glossary</strong><span>' + ui.glossaryCount + " key terms with short definitions, from <code>any</code> to <code>unknown</code>.</span></a>" +
+      '<a class="home-extra" href="#glossary"><strong>Glossary</strong><span>' + ui.glossaryCount + " key terms with short definitions, such as <code>unknown</code>, narrowing and <code>tsconfig.json</code>.</span></a>" +
       '<button type="button" class="home-extra" id="home-search"><strong>Search</strong><span>Press <span class="kbd">/</span> to search guides, terms and questions.</span></button>' +
       '<div class="home-extra"><strong>Progress</strong><span>Saved in this browser. Answer something each day to build a streak.</span></div>' +
       "</div>";
@@ -343,7 +343,7 @@
 
     var head = el("div", "level-head");
     head.innerHTML =
-      '<div class="crumb">' + (level.kind === "lab" ? "Project lab " + labNumber(level) : "Chapter " + chapterNumber(level)) + "</div>" +
+      '<div class="crumb">' + (level.kind === "lab" ? "Project Lab " + labNumber(level) : "Chapter " + chapterNumber(level)) + "</div>" +
       "<h1>" + esc(level.title) + "</h1>" +
       '<p class="blurb">' + md(level.kind === "lab" ? level.lab.blurb : level.chapter.blurb) + "</p>" +
       '<div class="chips" id="chips"></div>';
@@ -359,7 +359,7 @@
         route.index = i;
       }));
     } else if (route.section === "challenges") {
-      body.appendChild(el("p", "section-intro", "Write real TypeScript. Run & check type-checks it with the actual compiler in strict mode, then runs tests against it."));
+      body.appendChild(el("p", "section-intro", "Write real TypeScript, then press Run & check. Your code is type-checked by the actual compiler in strict mode, then run against tests."));
       level.chapter.challenges.forEach(function (c) { body.appendChild(ui.renderChallenge(c)); });
       scrollToNth(".challenge", route.index);
     } else if (route.section === "examples") {
